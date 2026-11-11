@@ -105,6 +105,9 @@ class LocalJsonWorkRepository(
                 // 8. 辅助内容 auxiliary 解析
                 val auxiliary = parseAuxiliary(jsonObject)
 
+                // 9. 多来源追溯凭证 sourceTraces 解析（可选，平滑兼容旧版 600 首作品）
+                val sourceTraces = parseSourceTraces(jsonObject)
+
                 return Work(
                     id = currentId,
                     title = currentTitle,
@@ -123,10 +126,27 @@ class LocalJsonWorkRepository(
                     source = source,
                     sourceId = sourceId,
                     licenseNote = licenseNote,
+                    sourceTraces = sourceTraces,
                 )
             } catch (e: Exception) {
                 throw IllegalStateException("解析作品失败 [序号: $index, ID: ${currentId ?: "未知"}, 标题: ${currentTitle ?: "未知"}]: ${e.message}", e)
             }
+        }
+
+        /**
+         * 纯文本 JSON 反序列化入口，供无 Android SDK Stub 依赖的 JVM 测试或通用反序列化调用
+         */
+        fun parseWorkFromJson(jsonString: String, index: Int = 0): Work {
+            return com.shi.yun.data.util.WorkJsonSerializer.deserialize(jsonString)
+        }
+
+        private fun parseSourceTraces(jsonObject: JSONObject): List<com.shi.yun.data.model.WorkSourceTrace> {
+            if (!jsonObject.has("sourceTraces") || jsonObject.isNull("sourceTraces")) {
+                return emptyList()
+            }
+            val raw = jsonObject.opt("sourceTraces") ?: return emptyList()
+            val parsedList = com.shi.yun.data.util.WorkJsonSerializer.parseJson(raw.toString()) as? List<*>
+            return com.shi.yun.data.util.WorkJsonSerializer.parseSourceTracesFromList(parsedList)
         }
 
         private fun requireNonBlankString(json: JSONObject, key: String): String {
