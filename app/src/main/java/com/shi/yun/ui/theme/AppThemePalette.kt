@@ -46,7 +46,10 @@ object AppThemePalette {
         titleText = Color(0xFF1A1815),
         bodyText = Color(0xFF2D2824),
         secondaryText = Color(0xFF62584E),
-        backgroundResId = R.drawable.bg_home_landscape,
+        backgroundStyle = ThemeBackgroundStyle.Gradient(
+            topColor = Color(0xFFF6E9CF),
+            bottomColor = Color(0xFFE8D0A5),
+        ),
     )
 
     // ========== 2. 竹青雅韵 (经典) ==========
@@ -79,7 +82,10 @@ object AppThemePalette {
         titleText = Color(0xFF16231B),
         bodyText = Color(0xFF24352B),
         secondaryText = Color(0xFF556A5E),
-        backgroundResId = R.drawable.bg_home_bamboo,
+        backgroundStyle = ThemeBackgroundStyle.Gradient(
+            topColor = Color(0xFFE5F0DF),
+            bottomColor = Color(0xFFB8D2B5),
+        ),
     )
 
     // ========== 3. 黛青山水 (经典) ==========
@@ -112,7 +118,10 @@ object AppThemePalette {
         titleText = Color(0xFF141E28),
         bodyText = Color(0xFF203040),
         secondaryText = Color(0xFF546678),
-        backgroundResId = R.drawable.bg_home_indigo,
+        backgroundStyle = ThemeBackgroundStyle.Gradient(
+            topColor = Color(0xFFE5EEF0),
+            bottomColor = Color(0xFFB4CDD0),
+        ),
     )
 
     // ========== 4. 朱砂雅集 (经典) ==========
@@ -145,7 +154,10 @@ object AppThemePalette {
         titleText = Color(0xFF251512),
         bodyText = Color(0xFF3A2622),
         secondaryText = Color(0xFF6E5550),
-        backgroundResId = R.drawable.bg_home_cinnabar,
+        backgroundStyle = ThemeBackgroundStyle.Gradient(
+            topColor = Color(0xFFF7E5DD),
+            bottomColor = Color(0xFFE8B8A8),
+        ),
     )
 
     // ========== 5. 琥珀秋笺 (经典) ==========
@@ -178,7 +190,10 @@ object AppThemePalette {
         titleText = Color(0xFF22190E),
         bodyText = Color(0xFF362B1D),
         secondaryText = Color(0xFF6A5B47),
-        backgroundResId = R.drawable.bg_home_amber,
+        backgroundStyle = ThemeBackgroundStyle.Gradient(
+            topColor = Color(0xFFF6E6C2),
+            bottomColor = Color(0xFFE5BD78),
+        ),
     )
 
     // ========== 6. 墨夜清辉 (经典暗色) ==========
@@ -211,7 +226,10 @@ object AppThemePalette {
         titleText = Color(0xFFF2EFE8),
         bodyText = Color(0xFFDCD7CE),
         secondaryText = Color(0xFF969B95),
-        backgroundResId = R.drawable.bg_home_night,
+        backgroundStyle = ThemeBackgroundStyle.Gradient(
+            topColor = Color(0xFF182536),
+            bottomColor = Color(0xFF34475B),
+        ),
     )
 
     // ========== 7. 柳烟春晓 (四时春) ==========
@@ -244,7 +262,10 @@ object AppThemePalette {
         titleText = Color(0xFF162312),
         bodyText = Color(0xFF273822),
         secondaryText = Color(0xFF576C50),
-        backgroundResId = R.drawable.bg_home_spring,
+        backgroundStyle = ThemeBackgroundStyle.ImagePattern(
+            drawableResId = R.drawable.bg_home_spring,
+            fallbackBaseColor = Color(0xFFEEF4E7),
+        ),
     )
 
     // ========== 8. 荷风清韵 (四时夏) ==========
@@ -277,7 +298,10 @@ object AppThemePalette {
         titleText = Color(0xFF122024),
         bodyText = Color(0xFF1F343A),
         secondaryText = Color(0xFF526A72),
-        backgroundResId = R.drawable.bg_home_lotus,
+        backgroundStyle = ThemeBackgroundStyle.ImagePattern(
+            drawableResId = R.drawable.bg_home_lotus,
+            fallbackBaseColor = Color(0xFFE9F3F4),
+        ),
     )
 
     // ========== 9. 枫笺染霜 (四时秋) ==========
@@ -310,7 +334,10 @@ object AppThemePalette {
         titleText = Color(0xFF241611),
         bodyText = Color(0xFF392620),
         secondaryText = Color(0xFF705750),
-        backgroundResId = R.drawable.bg_home_maple,
+        backgroundStyle = ThemeBackgroundStyle.ImagePattern(
+            drawableResId = R.drawable.bg_home_maple,
+            fallbackBaseColor = Color(0xFFF6EEE6),
+        ),
     )
 
     // ========== 10. 寒江雪隐 (四时冬) ==========
@@ -343,7 +370,10 @@ object AppThemePalette {
         titleText = Color(0xFF131D26),
         bodyText = Color(0xFF212E3C),
         secondaryText = Color(0xFF536576),
-        backgroundResId = R.drawable.bg_home_snow,
+        backgroundStyle = ThemeBackgroundStyle.ImagePattern(
+            drawableResId = R.drawable.bg_home_snow,
+            fallbackBaseColor = Color(0xFFE9EFF4),
+        ),
     )
 
     /**

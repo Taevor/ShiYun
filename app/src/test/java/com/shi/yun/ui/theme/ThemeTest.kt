@@ -101,7 +101,30 @@ class ThemeTest {
             assertTrue("${theme.id} titleText 必须已指定", tokens.titleText.isSpecified)
             assertTrue("${theme.id} bodyText 必须已指定", tokens.bodyText.isSpecified)
             assertTrue("${theme.id} secondaryText 必须已指定", tokens.secondaryText.isSpecified)
-            assertTrue("${theme.id} backgroundResId 必须有效指向图片资源", tokens.backgroundResId != 0)
+
+            // 背景样式架构断言：6套经典主题为渐变背景，4套季节主题为独立图片模式
+            when (theme.category) {
+                ThemeCategory.CLASSIC -> {
+                    assertTrue(
+                        "经典主题【${theme.displayName}】必须使用 ThemeBackgroundStyle.Gradient",
+                        tokens.backgroundStyle is ThemeBackgroundStyle.Gradient,
+                    )
+                    val gradient = tokens.backgroundStyle as ThemeBackgroundStyle.Gradient
+                    assertTrue("${theme.displayName} gradient topColor 必须已指定", gradient.topColor.isSpecified)
+                    assertTrue("${theme.displayName} gradient bottomColor 必须已指定", gradient.bottomColor.isSpecified)
+                    assertEquals("经典主题兼容属性 backgroundResId 必须为 0", 0, tokens.backgroundResId)
+                }
+                ThemeCategory.SEASONAL -> {
+                    assertTrue(
+                        "季节主题【${theme.displayName}】必须使用 ThemeBackgroundStyle.ImagePattern",
+                        tokens.backgroundStyle is ThemeBackgroundStyle.ImagePattern,
+                    )
+                    val pattern = tokens.backgroundStyle as ThemeBackgroundStyle.ImagePattern
+                    assertTrue("${theme.displayName} pattern drawableResId 必须有效指向图片资源", pattern.drawableResId != 0)
+                    assertTrue("${theme.displayName} pattern fallbackBaseColor 必须已指定", pattern.fallbackBaseColor.isSpecified)
+                    assertEquals("季节主题兼容属性 backgroundResId 必须与 pattern.drawableResId 一致", pattern.drawableResId, tokens.backgroundResId)
+                }
+            }
         }
 
         // 默认宣纸古籍主题必须保持无额外图层染色 (Color.Transparent)，确保验收效果 100% 不变形

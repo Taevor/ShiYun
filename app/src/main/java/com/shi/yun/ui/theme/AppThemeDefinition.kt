@@ -1,8 +1,36 @@
 package com.shi.yun.ui.theme
 
+import androidx.annotation.DrawableRes
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
+
+/**
+ * 诗云全局主题背景渲染策略
+ */
+sealed interface ThemeBackgroundStyle {
+    /**
+     * 经典纯色东方渐变模式（纯竖向线性渐变，轻量高效，杜绝图片回退）
+     * @param topColor 顶部起始渐变色
+     * @param bottomColor 底部终止渐变色
+     */
+    data class Gradient(
+        val topColor: Color,
+        val bottomColor: Color,
+    ) : ThemeBackgroundStyle
+
+    /**
+     * 季节水墨插画模式（独立背景图，支持底色保底与可调透明度）
+     * @param drawableResId 独立 Drawable 资源 ID
+     * @param fallbackBaseColor 背景图解码加载完成前的安全基底色
+     * @param alpha 图片渲染透明度，默认 0.85f
+     */
+    data class ImagePattern(
+        @param:DrawableRes val drawableResId: Int,
+        val fallbackBaseColor: Color,
+        val alpha: Float = 0.85f,
+    ) : ThemeBackgroundStyle
+}
 
 /**
  * 诗云古典扩展主题属性（超越 M3 默认字段的古籍定制视觉属性）
@@ -15,7 +43,7 @@ import androidx.compose.ui.graphics.Color
  * @property titleText 诗词主标题、大字摘录核心标题色
  * @property bodyText 诗词正文、小序内容、释义说明主文字色
  * @property secondaryText 作者、朝代、体裁、注脚辅助文字色
- * @property backgroundResId 首页专属水墨山水背景图 Drawable 资源 ID
+ * @property backgroundStyle 全局主题背景渲染策略（渐变或图片）
  */
 data class AppThemeCustomTokens(
     val cardBackground: Color,
@@ -26,8 +54,14 @@ data class AppThemeCustomTokens(
     val titleText: Color,
     val bodyText: Color,
     val secondaryText: Color,
-    val backgroundResId: Int,
-)
+    val backgroundStyle: ThemeBackgroundStyle,
+) {
+    /**
+     * 针对旧有代码的向后兼容计算属性：若为图片模式则返回其资源 ID，渐变模式返回 0
+     */
+    val backgroundResId: Int
+        get() = (backgroundStyle as? ThemeBackgroundStyle.ImagePattern)?.drawableResId ?: 0
+}
 
 /**
  * 单套全局主题的完整定义体
