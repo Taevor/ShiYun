@@ -265,8 +265,8 @@ object AppThemePalette {
         backgroundStyle = ThemeBackgroundStyle.ImagePattern(
             drawableResId = R.drawable.bg_home_spring,
             fallbackBaseColor = Color(0xFFFAF4F3),
-            scrimColor = Color(0xFFFFF7F6),
-            scrimAlpha = 0.12f,
+            scrimColor = Color(0xFFEFEAE6),
+            scrimAlpha = 0.22f,
         ),
     )
 
@@ -303,8 +303,8 @@ object AppThemePalette {
         backgroundStyle = ThemeBackgroundStyle.ImagePattern(
             drawableResId = R.drawable.bg_home_lotus,
             fallbackBaseColor = Color(0xFFEFF6F4),
-            scrimColor = Color(0xFFF7FCFA),
-            scrimAlpha = 0.12f,
+            scrimColor = Color(0xFFE8EDE9),
+            scrimAlpha = 0.22f,
         ),
     )
 
@@ -341,8 +341,8 @@ object AppThemePalette {
         backgroundStyle = ThemeBackgroundStyle.ImagePattern(
             drawableResId = R.drawable.bg_home_maple,
             fallbackBaseColor = Color(0xFFF6EEE6),
-            scrimColor = Color(0xFFFFF9F5),
-            scrimAlpha = 0.12f,
+            scrimColor = Color(0xFFEFE8E1),
+            scrimAlpha = 0.22f,
         ),
     )
 
@@ -379,8 +379,8 @@ object AppThemePalette {
         backgroundStyle = ThemeBackgroundStyle.ImagePattern(
             drawableResId = R.drawable.bg_home_snow,
             fallbackBaseColor = Color(0xFFE9EFF4),
-            scrimColor = Color(0xFFF5F9FC),
-            scrimAlpha = 0.12f,
+            scrimColor = Color(0xFFE8ECF0),
+            scrimAlpha = 0.22f,
         ),
     )
 
