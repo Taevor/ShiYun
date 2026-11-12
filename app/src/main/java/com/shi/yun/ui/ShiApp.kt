@@ -47,6 +47,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -72,6 +73,7 @@ import com.shi.yun.common.log.AppLogger
 import com.shi.yun.ui.search.SearchScreen
 import com.shi.yun.ui.theme.AppThemeId
 import com.shi.yun.ui.theme.LocalAppTheme
+import com.shi.yun.ui.theme.ThemeBackgroundStyle
 import com.shi.yun.ui.theme.ThemeSelectionBottomSheet
 import kotlinx.coroutines.launch
 
@@ -149,27 +151,42 @@ fun ShiApp(
     }
 
     val appTheme = LocalAppTheme.current
-    val isDarkTheme = appTheme.themeId.isDark
-    val bgImageAlpha = when {
-        isDarkTheme -> 0.78f
-        appTheme.themeId == AppThemeId.XUAN_PAPER -> 0.58f
-        else -> 0.78f
-    }
-    val backgroundDrawableId = appTheme.customTokens.backgroundResId.takeIf { it != 0 } ?: R.drawable.bg_home_landscape
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface),
+        modifier = modifier.fillMaxSize(),
     ) {
-        // 全局主题背景图片体系：统领首页、分类、搜索、收藏与诗词详情，全局统一缩放与渲染坐标，零额外重解码
-        Image(
-            painter = painterResource(id = backgroundDrawableId),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-            alpha = bgImageAlpha,
-        )
+        // 全局主题背景体系：根据当前主题配置的 backgroundStyle 决定渲染纯竖向渐变或独立季节插画
+        when (val bgStyle = appTheme.customTokens.backgroundStyle) {
+            is ThemeBackgroundStyle.Gradient -> {
+                // 1. 六套经典主题：纯色竖向线性渐变，绝对不加载任何图片资源，彻底消除默认图片回退
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(bgStyle.topColor, bgStyle.bottomColor),
+                            ),
+                        ),
+                )
+            }
+
+            is ThemeBackgroundStyle.ImagePattern -> {
+                // 2. 四套季节主题：先绘制保底底色，再等比居中裁剪绘制各自专属的独立四季图片
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(bgStyle.fallbackBaseColor),
+                ) {
+                    Image(
+                        painter = painterResource(id = bgStyle.drawableResId),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        alpha = bgStyle.alpha,
+                    )
+                }
+            }
+        }
 
         // 色彩氛围微调层
         if (appTheme.customTokens.overlayBlendColor != Color.Transparent) {
