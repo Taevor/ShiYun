@@ -171,7 +171,7 @@ fun ShiApp(
             }
 
             is ThemeBackgroundStyle.ImagePattern -> {
-                // 2. 四套季节主题：先绘制保底底色，再等比居中裁剪绘制各自专属的独立四季图片
+                // 2. 四套季节主题：先绘制保底底色，再等比居中裁剪绘制各自专属的独立四季图片，并施加轻微季节柔光遮罩
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -184,6 +184,14 @@ fun ShiApp(
                         contentScale = ContentScale.Crop,
                         alpha = bgStyle.alpha,
                     )
+                    // 柔和遮罩层：降低背景存在感，不压暗图片，不覆盖任何前景交互组件
+                    if (bgStyle.scrimAlpha > 0f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(bgStyle.scrimColor.copy(alpha = bgStyle.scrimAlpha)),
+                        )
+                    }
                 }
             }
         }

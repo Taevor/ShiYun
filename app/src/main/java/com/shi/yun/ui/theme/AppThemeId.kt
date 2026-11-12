@@ -22,8 +22,8 @@ enum class ThemeCategory(val displayName: String) {
  * 6. 墨夜清辉 - 幽夜松烟，沉浸夜读（暗色）
  *
  * 四时主题 (4套)：
- * 7. 柳烟春晓 - 翠堤春晓，鹅黄嫩柳
- * 8. 荷风清韵 - 映日荷花，微风过池
+ * 7. 桃夭春晓 - 桃溪春晓，落英映水
+ * 8. 荷风清韵 - 映日荷花，微风出岫
  * 9. 枫笺染霜 - 霜叶晚林，秋色连波
  * 10. 寒江雪隐 - 孤舟钓雪，素练苍茫
  */
@@ -102,13 +102,13 @@ enum class AppThemeId(
     // ========== 四时主题 (4套) ==========
     SPRING_WILLOW(
         id = "spring_willow",
-        displayName = "柳烟春晓",
-        subtitle = "翠堤春晓 · 鹅黄嫩柳",
+        displayName = "桃夭春晓",
+        subtitle = "桃溪春晓 · 落英映水",
         category = ThemeCategory.SEASONAL,
         isDark = false,
-        primaryPreviewColor = Color(0xFF4A6D3A),
-        surfacePreviewColor = Color(0xFFF3F6ED),
-        accentPreviewColor = Color(0xFFC8853A),
+        primaryPreviewColor = Color(0xFF7B384A),
+        surfacePreviewColor = Color(0xFFF5E8EA),
+        accentPreviewColor = Color(0xFFC95B75),
     ),
     SUMMER_LOTUS(
         id = "summer_lotus",
@@ -116,9 +116,9 @@ enum class AppThemeId(
         subtitle = "映日荷花 · 微风出岫",
         category = ThemeCategory.SEASONAL,
         isDark = false,
-        primaryPreviewColor = Color(0xFF32616E),
-        surfacePreviewColor = Color(0xFFF2F6F7),
-        accentPreviewColor = Color(0xFFC2566A),
+        primaryPreviewColor = Color(0xFF235E4E),
+        surfacePreviewColor = Color(0xFFDFEFEA),
+        accentPreviewColor = Color(0xFFC24F68),
     ),
     AUTUMN_MAPLE(
         id = "autumn_maple",
