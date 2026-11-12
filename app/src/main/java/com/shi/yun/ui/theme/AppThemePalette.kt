@@ -266,7 +266,7 @@ object AppThemePalette {
             drawableResId = R.drawable.bg_home_spring,
             fallbackBaseColor = Color(0xFFFAF4F3),
             scrimColor = Color(0xFFEFEAE6),
-            scrimAlpha = 0.30f,
+            scrimAlpha = 0.45f,
         ),
     )
 
@@ -304,7 +304,7 @@ object AppThemePalette {
             drawableResId = R.drawable.bg_home_lotus,
             fallbackBaseColor = Color(0xFFEFF6F4),
             scrimColor = Color(0xFFE8EDE9),
-            scrimAlpha = 0.30f,
+            scrimAlpha = 0.45f,
         ),
     )
 
@@ -342,7 +342,7 @@ object AppThemePalette {
             drawableResId = R.drawable.bg_home_maple,
             fallbackBaseColor = Color(0xFFF6EEE6),
             scrimColor = Color(0xFFEFE8E1),
-            scrimAlpha = 0.30f,
+            scrimAlpha = 0.45f,
         ),
     )
 
@@ -380,7 +380,7 @@ object AppThemePalette {
             drawableResId = R.drawable.bg_home_snow,
             fallbackBaseColor = Color(0xFFE9EFF4),
             scrimColor = Color(0xFFE8ECF0),
-            scrimAlpha = 0.30f,
+            scrimAlpha = 0.45f,
         ),
     )
 

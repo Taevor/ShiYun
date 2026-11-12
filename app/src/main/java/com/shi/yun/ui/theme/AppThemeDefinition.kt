@@ -25,14 +25,14 @@ sealed interface ThemeBackgroundStyle {
      * @param fallbackBaseColor 背景图解码加载完成前的安全基底色
      * @param alpha 图片渲染透明度，默认 0.85f
      * @param scrimColor 季节轻微柔光遮罩基色（使用季节浅色调，杜绝因深底色压暗背景）
-     * @param scrimAlpha 遮罩透明度，默认 0.30f
+     * @param scrimAlpha 遮罩透明度，默认 0.45f
      */
     data class ImagePattern(
         @param:DrawableRes val drawableResId: Int,
         val fallbackBaseColor: Color,
         val alpha: Float = 0.85f,
         val scrimColor: Color = Color.White,
-        val scrimAlpha: Float = 0.30f,
+        val scrimAlpha: Float = 0.45f,
     ) : ThemeBackgroundStyle
 }
 
