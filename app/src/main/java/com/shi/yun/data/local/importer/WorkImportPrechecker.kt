@@ -5,6 +5,7 @@ import com.shi.yun.data.local.dao.WorkDao
 import com.shi.yun.data.local.importer.detector.WorkDuplicateDetector
 import com.shi.yun.data.local.importer.model.BatchPrecheckSummary
 import com.shi.yun.data.local.importer.model.PrecheckDisposition
+import com.shi.yun.data.local.importer.model.TitleSourceType
 import com.shi.yun.data.local.importer.model.WorkImportItem
 import com.shi.yun.data.local.importer.model.WorkPrecheckReportItem
 import com.shi.yun.data.local.importer.validator.WorkImportValidator
@@ -15,7 +16,9 @@ import com.shi.yun.data.local.importer.validator.WorkImportValidator
  * 在实际写入数据库之前，对整批作品执行纯只读的前置校验、内部去重与库内重复识别：
  * 1. 严格遵守只读原则：全流程绝不执行任何 INSERT / UPDATE / DELETE 写入；
  * 2. 依次经历：字段业务校验 -> 批次内重复识别 -> 数据库跨表比对判定；
- * 3. 产出包含状态（可导入/可跳过/待确认/校验失败）及明确中文原因的完整报告。
+ * 3. 产出包含状态（可导入/可跳过/待确认/校验失败）及明确中文原因的完整报告；
+ * 4. 稳妥处理宋词题名：若成功提取首句作为题名 (GENERATED_FIRST_LINE)，且满足其他校验，正常进入预检通过/查重流；
+ *    仅当无法可靠获得任何题名 (title 为空且 titleSourceType 为 UNKNOWN) 时，保留待确认 (NEEDS_CONFIRMATION) 状态。
  */
 class WorkImportPrechecker(
     private val duplicateDetector: WorkDuplicateDetector
@@ -54,6 +57,21 @@ class WorkImportPrechecker(
                         author = authorName,
                         disposition = PrecheckDisposition.VALIDATION_FAILED,
                         reason = "前置校验不通过: $failureReasons",
+                        issues = validationResult.issues
+                    )
+                )
+                continue
+            }
+
+            // 检查是否存在无独立标题且无法可靠提取首句（仅含词牌）的宋词或特殊词作：保留待确认状态，坚决不编造假标题
+            if (item.title.isBlank() && !item.cipai.isNullOrBlank()) {
+                reportItems.add(
+                    WorkPrecheckReportItem(
+                        index = index,
+                        title = "[词牌] ${item.cipai}",
+                        author = authorName,
+                        disposition = PrecheckDisposition.NEEDS_CONFIRMATION,
+                        reason = "作品无独立标题且无法可靠提取正文首句（仅含词牌 [${item.cipai}]），保留待确认状态，需人工确认标题或核准为无题",
                         issues = validationResult.issues
                     )
                 )

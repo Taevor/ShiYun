@@ -41,6 +41,7 @@ captures/
 /.idea/shelf/
 /.idea/androidTestResultsUserPreferences.xml
 /.idea/render.experimental.xml
+/.idea/deviceManager.xml
 
 # Keystore and signing files
 *.jks

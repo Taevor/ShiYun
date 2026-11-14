@@ -25,7 +25,12 @@ object WorkImportValidator {
 
         // 1. 标题校验
         if (item.title.isBlank()) {
-            issues.add(ValidationIssue("title", "作品标题不能为空白", isFatal = true))
+            if (!item.cipai.isNullOrBlank()) {
+                // 仅含词牌无独立题名且无法提取正文首句的宋词/词作，作为非致命问题记录，保留进入待确认 (NEEDS_CONFIRMATION) 状态
+                issues.add(ValidationIssue("title", "作品无独立标题且无法可靠提取正文首句（仅含词牌 [${item.cipai}]），需人工确认标题或核准为无题", isFatal = false))
+            } else {
+                issues.add(ValidationIssue("title", "作品标题不能为空白", isFatal = true))
+            }
         }
 
         // 2. 正文校验（仅要求正文非空，不设字数下限以支持单字名作）

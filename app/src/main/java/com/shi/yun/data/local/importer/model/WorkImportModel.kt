@@ -3,6 +3,25 @@ package com.shi.yun.data.local.importer.model
 import com.shi.yun.data.model.AnnotationItem
 
 /**
+ * 题名来源类型枚举 (TitleSourceType)
+ *
+ * 标识作品标题/词题的真实获取途径，杜绝生成题名伪装成原始来源题名：
+ * 1. SOURCE_TITLE: 来源明确提供的原始题名；
+ * 2. GENERATED_FIRST_LINE: 来源无题时由正文首句生成的默认展示题名；
+ * 3. UNKNOWN: 题名未知（无法提取首句或内容损坏），保持待确认状态。
+ */
+enum class TitleSourceType(val code: String, val displayName: String) {
+    /** 来源明确提供的原始题名 */
+    SOURCE_TITLE("SOURCE_TITLE", "来源原始题名"),
+
+    /** 由正文首句生成的默认展示题名 */
+    GENERATED_FIRST_LINE("GENERATED_FIRST_LINE", "正文首句生成"),
+
+    /** 题名未知，无法可靠获得 */
+    UNKNOWN("UNKNOWN", "未知")
+}
+
+/**
  * 导入作者数据模型 (AuthorImportItem)
  *
  * 记录作者的姓名、别名、朝代以及独立的生平介绍与来源出处。
@@ -37,10 +56,13 @@ data class SourceImportInfo(
  * 2. 创作时代与七维分类（朝代、体裁、形式、词牌、曲牌、标签）；
  * 3. 署名作者与合著者档案；
  * 4. 五维受控内容体系（CONTENT, TRANSLATION, ANNOTATION, BACKGROUND, APPRECIATION），不含已废弃的拼音；
- * 5. 细粒度来源信息（整作外部来源、正文底本来源、辅助内容各维度的独立凭证）。
+ * 5. 细粒度来源信息（整作外部来源、正文底本来源、辅助内容各维度的独立凭证）；
+ * 6. 题名来源标记 (titleSourceType)，明确标识是否由首句生成。
  */
 data class WorkImportItem(
     val title: String,
+    val rawTitle: String? = null, // 来源原始 title 字符串（便于审计追溯）
+    val titleSourceType: TitleSourceType = TitleSourceType.SOURCE_TITLE,
     val subtitle: String? = null,
     val preface: String? = null,
     val layoutType: String? = null,
@@ -68,6 +90,7 @@ data class WorkImportItem(
     val externalSourceCode: String? = null, // 如 "SHI_CI_CN", "PALEMOKY"
     val externalWorkId: String? = null,
     val externalUrl: String? = null,
+    val sourceVersion: String? = null, // Git Commit Hash、数据集版本号（若无则明确为 null）
     val rawFormat: String = "PLAIN_TEXT",
     val rawPayload: String? = null
 )
