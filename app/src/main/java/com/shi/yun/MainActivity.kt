@@ -12,11 +12,12 @@ import com.shi.yun.common.log.AppLogger
 import com.shi.yun.data.model.ReadingFontFamily
 import com.shi.yun.data.repository.CustomFontRepository
 import com.shi.yun.data.repository.LocalCustomFontRepository
-import com.shi.yun.data.repository.LocalJsonWorkRepository
 import com.shi.yun.data.repository.LocalReadingPreferencesRepository
 import com.shi.yun.data.repository.LocalThemePreferencesRepository
 import com.shi.yun.data.repository.ReadingPreferencesRepository
 import com.shi.yun.data.repository.ThemePreferencesRepository
+import com.shi.yun.data.local.ShiYunDatabase
+import com.shi.yun.data.local.repository.RoomWorkRepository
 import com.shi.yun.data.repository.WorkRepository
 import com.shi.yun.ui.ShiApp
 import com.shi.yun.ui.theme.诗云Theme
@@ -31,8 +32,12 @@ import com.shi.yun.ui.theme.诗云Theme
  */
 class MainActivity : ComponentActivity() {
 
+    private val database: ShiYunDatabase by lazy {
+        ShiYunDatabase.getInstance(applicationContext)
+    }
+
     private val workRepository: WorkRepository by lazy {
-        LocalJsonWorkRepository(applicationContext)
+        RoomWorkRepository(database)
     }
 
     private val themeRepository: ThemePreferencesRepository by lazy {

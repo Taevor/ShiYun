@@ -350,6 +350,7 @@ abstract class ShiYunDatabase : RoomDatabase() {
                     ShiYunDatabase::class.java,
                     DATABASE_NAME
                 )
+                    .createFromAsset("database/shiyun.db")
                     .addCallback(DB_CALLBACK)
                     .build().also { INSTANCE = it }
             }

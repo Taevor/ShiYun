@@ -353,7 +353,11 @@ private fun DynastyPage(
         ) {
             dynastyOptions.forEach { dynasty ->
                 val isSelected = selectedDynasty == dynasty
-                val displayLabel = if (dynasty == "全部") "全部" else "${dynasty}代"
+                val displayLabel = when {
+                    dynasty == "全部" -> "全部"
+                    dynasty.endsWith("代") || dynasty.endsWith("朝") || dynasty == "先秦" || dynasty == "两汉" || dynasty == "三国" -> dynasty
+                    else -> "${dynasty}代"
+                }
                 FilterChip(
                     selected = isSelected,
                     onClick = { onDynastyChange(dynasty) },
