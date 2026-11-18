@@ -292,7 +292,7 @@ object WorkEntityMapper {
     /**
      * 解析辅助内容集合 (AuxiliaryContent)
      */
-    private fun resolveAuxiliary(
+    internal fun resolveAuxiliary(
         components: List<ContentComponentEntity>,
         attributions: List<ContentAttributionEntity>,
         sourceLinkMap: Map<String, ExternalSourceLinkEntity>
@@ -320,9 +320,10 @@ object WorkEntityMapper {
             buildComponentSourceInfo(bgComp?.componentId, attrMap, sourceLinkMap, defaultName = "创作背景资料", defaultNote = "收录创作背景")
         } else null
 
-        // 4. 文学赏析 (APPRECIATION) - 严格保持独立，绝不与背景合并
+        // 4. 文学赏析 (APPRECIATION) - 严格保持独立，绝不与背景合并，深度清洗剥离内部元数据 ID
         val apprecComp = components.firstOrNull { it.componentType == ComponentType.APPRECIATION.code }
-        val appreciationText = apprecComp?.contentPayload?.trim()?.takeIf { it.isNotEmpty() }
+        val rawAppreciation = apprecComp?.contentPayload?.trim()?.takeIf { it.isNotEmpty() }
+        val appreciationText = cleanAppreciationPayload(rawAppreciation)
         val appreciationSource = if (appreciationText != null) {
             buildComponentSourceInfo(apprecComp?.componentId, attrMap, sourceLinkMap, defaultName = "文学赏析资料", defaultNote = "收录文学赏析")
         } else null
@@ -463,5 +464,83 @@ object WorkEntityMapper {
             "USER_CUSTOM", "CUSTOM" -> SourceOrigin.USER_CUSTOM
             else -> SourceOrigin.LOCAL_CANONICAL
         }
+    }
+
+    /**
+     * 清理赏析正文中的内部元数据与原始 JSON 结构
+     * 1. 若为海棠鉴赏辞典 JSON 数组，解析提取纯净题解、作者与正文，彻底剥离内部 ID (bookId, articleId)；
+     * 2. 若为纯文本，过滤包含残留元数据键名的行，保障正文呈现纯正典雅。
+     */
+    fun cleanAppreciationPayload(rawPayload: String?): String? {
+        if (rawPayload.isNullOrBlank()) return null
+        val trimmed = rawPayload.trim()
+
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+            try {
+                val jsonArray = JSONArray(trimmed)
+                val articles = mutableListOf<String>()
+                val seenContents = mutableSetOf<String>()
+
+                for (i in 0 until jsonArray.length()) {
+                    val item = jsonArray.optJSONObject(i) ?: continue
+                    val content = item.optString("shortContent").ifBlank {
+                        item.optString("content")
+                    }.trim()
+
+                    if (content.isBlank() || seenContents.contains(content)) {
+                        continue
+                    }
+                    seenContents.add(content)
+
+                    val bookTitle = item.optString("bookTitle").trim()
+                    val authorsArr = item.optJSONArray("authors")
+                    val authorList = mutableListOf<String>()
+                    if (authorsArr != null) {
+                        for (j in 0 until authorsArr.length()) {
+                            val a = authorsArr.optString(j).trim()
+                            if (a.isNotEmpty()) authorList.add(a)
+                        }
+                    }
+                    val authorStr = when {
+                        authorList.isEmpty() -> ""
+                        authorList.all { it.length == 1 } -> authorList.joinToString("")
+                        else -> authorList.joinToString("、")
+                    }
+
+                    val header = when {
+                        bookTitle.isNotEmpty() && authorStr.isNotEmpty() -> "【赏析】（选自《$bookTitle》· $authorStr）"
+                        bookTitle.isNotEmpty() -> "【赏析】（选自《$bookTitle》）"
+                        authorStr.isNotEmpty() -> "【赏析】（文 / $authorStr）"
+                        else -> ""
+                    }
+
+                    val articleText = if (header.isNotEmpty()) {
+                        "$header\n$content"
+                    } else {
+                        content
+                    }
+                    articles.add(articleText)
+                }
+
+                if (articles.isNotEmpty()) {
+                    return articles.joinToString("\n\n")
+                }
+            } catch (_: Exception) {
+                // 若 JSON 解析异常，降级进入文本行过滤
+            }
+        }
+
+        val lines = trimmed.split("\n")
+        val cleanedLines = lines.filterNot { line ->
+            val l = line.trim()
+            (l.contains("bookId", ignoreCase = true) ||
+             l.contains("articleId", ignoreCase = true) ||
+             l.contains("aiticleId", ignoreCase = true) ||
+             l.contains("book_id", ignoreCase = true) ||
+             l.contains("article_id", ignoreCase = true)) &&
+            (l.contains(":") || l.contains("：") || l.contains("\""))
+        }
+
+        return cleanedLines.joinToString("\n").trim().takeIf { it.isNotEmpty() }
     }
 }

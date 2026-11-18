@@ -202,7 +202,10 @@ fun LogManagementDialog(
                                 if (result.uri != null) {
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Button(
-                                        onClick = { shareExportedLog(context, result) },
+                                        onClick = {
+                                            AppLogger.interaction("LogManagementDialog", "ShareLogButton", "Click", "SUCCESS", "分享日志文件: ${result.fileName}")
+                                            shareExportedLog(context, result)
+                                        },
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(8.dp),
                                     ) {
@@ -225,6 +228,7 @@ fun LogManagementDialog(
             Button(
                 onClick = {
                     if (isExporting) return@Button
+                    AppLogger.interaction("LogManagementDialog", "ExportLogsButton", "Click", "SUCCESS", "发起导出运行日志到下载目录")
                     isExporting = true
                     scope.launch {
                         val exportRes = withContext(Dispatchers.IO) {
@@ -260,6 +264,7 @@ fun LogManagementDialog(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
                     onClick = {
+                        AppLogger.interaction("LogManagementDialog", "ClearLogsButton", "Click", "SUCCESS", "发起清空本地所有日志")
                         val success = AppLogger.clearLogs()
                         refreshStats()
                         lastExportResult = null
@@ -274,7 +279,10 @@ fun LogManagementDialog(
                     Text(text = "清空本地日志", fontSize = 13.sp)
                 }
                 TextButton(
-                    onClick = onDismissRequest,
+                    onClick = {
+                        AppLogger.interaction("LogManagementDialog", "CloseButton", "Click", "SUCCESS", "关闭日志弹窗")
+                        onDismissRequest()
+                    },
                     shape = RoundedCornerShape(10.dp),
                 ) {
                     Text(text = "关闭", fontSize = 13.sp)

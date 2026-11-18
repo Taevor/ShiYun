@@ -12,6 +12,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -22,10 +23,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -59,9 +62,16 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shi.yun.R
+import com.shi.yun.common.log.AppLogger
 import com.shi.yun.data.model.Work
+import com.shi.yun.data.model.WorkListItem
 import com.shi.yun.data.model.formatAuthorDynasty
+import com.shi.yun.data.model.toWork
+import com.shi.yun.data.model.toWorkListItem
+import com.shi.yun.ui.detail.PoemTypography
 import com.shi.yun.ui.theme.LocalAppTheme
+import com.shi.yun.ui.theme.ThemeBackgroundStyle
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -147,17 +157,36 @@ fun HomeScreen(
     onMarkHintShown: () -> Unit,
     onWorkClick: (Work, androidx.compose.ui.geometry.Rect?) -> Unit,
     modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
 ) {
     if (recommendationList.isEmpty()) {
         Box(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = "暂无诗词数据",
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.outline,
-            )
+            if (isLoading) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(36.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                        strokeWidth = 2.5.dp,
+                    )
+                    Text(
+                        text = "正在寻觅佳作…",
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+            } else {
+                Text(
+                    text = "暂无符合条件的诗词数据",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+            }
         }
         return
     }
@@ -190,21 +219,23 @@ fun HomeScreen(
     Box(
         modifier = modifier.fillMaxSize(),
     ) {
-        // 状态栏顶部温润渐变保护层（跟随当前主题纸张色平滑过渡到透明，不推挤主体内容，不拦截手势）
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(gradientHeight)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            gradientBaseColor.copy(alpha = 0.90f),
-                            gradientBaseColor.copy(alpha = 0.55f),
-                            Color.Transparent,
+        // 状态栏顶部渐变保护层：仅在四季插画主题下启用（防止浅色插画冲淡状态栏），前六套纯色渐变主题直接透出纯色背景，不叠加白色渐变
+        if (appTheme.customTokens.backgroundStyle is ThemeBackgroundStyle.ImagePattern) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(gradientHeight)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                gradientBaseColor.copy(alpha = 0.90f),
+                                gradientBaseColor.copy(alpha = 0.55f),
+                                Color.Transparent,
+                            ),
                         ),
                     ),
-                ),
-        )
+            )
+        }
 
         var cardBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
 
@@ -215,14 +246,17 @@ fun HomeScreen(
                 .statusBarsPadding(),
             canSwipePrevious = currentIndex > 0,
             onSwipeNext = {
+                AppLogger.interaction("HomeScreen", "PoetryCard", "SwipeNext", "SUCCESS", "切换下一首 (index: $currentIndex -> ${currentIndex + 1})")
                 onIndexChange(currentIndex + 1)
             },
             onSwipePrevious = {
                 if (currentIndex > 0) {
+                    AppLogger.interaction("HomeScreen", "PoetryCard", "SwipePrevious", "SUCCESS", "切换上一首 (index: $currentIndex -> ${currentIndex - 1})")
                     onIndexChange(currentIndex - 1)
                 }
             },
             onClick = {
+                AppLogger.interaction("HomeScreen", "PoetryCard", "Click", "SUCCESS", "点击卡片进入详情: ${currentWork.title} (${currentWork.id})")
                 dismissHint()
                 onWorkClick(currentWork, cardBounds)
             },
@@ -283,25 +317,32 @@ private fun CardSwipeBox(
     val animOffsetX = remember { Animatable(0f) }
     val animOffsetY = remember { Animatable(0f) }
     val animAlpha = remember { Animatable(1f) }
-    var isAnimating by remember { mutableStateOf(false) }
+    val animJob = remember { mutableStateOf<Job?>(null) }
+    var dragOffsetX by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    var dragOffsetY by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    var isDraggingCard by remember { mutableStateOf(false) }
     var containerSize by remember { mutableStateOf(IntSize.Zero) }
 
     val density = LocalDensity.current
     val viewConfig = LocalViewConfiguration.current
     val touchSlop = viewConfig.touchSlop
-    val distanceThresholdPx = with(density) { 72.dp.toPx() }
-    val velocityThresholdPx = with(density) { 1000.dp.toPx() }
+    val distanceThresholdPx = with(density) { 60.dp.toPx() }
+    val velocityThresholdPx = with(density) { 700.dp.toPx() }
     val scope = rememberCoroutineScope()
 
     Box(
         modifier = modifier
             .onSizeChanged { containerSize = it }
-            .pointerInput(isAnimating) {
-                if (isAnimating) return@pointerInput
-
+            .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     val pointerId = down.id
+
+                    // 核心优化：当用户再次触控屏幕时，立即取消上一次尚未完全停止的动画（入场或回弹），
+                    // 由最新手势无缝接管，彻底消除“必须等待卡片完全停下才能再次滑动”的状态锁问题
+                    animJob.value?.cancel()
+                    animJob.value = null
+
                     var totalDrag = Offset.Zero
                     var isDragging = false
                     val velocityTracker = VelocityTracker()
@@ -330,9 +371,11 @@ private fun CardSwipeBox(
 
                                 when {
                                     action == SwipeDirection.NONE || (action == SwipeDirection.PREVIOUS && !currentCanSwipePrevious) -> {
-                                        // 未达到阈值或首篇不可后退：弹性回弹至原位
-                                        isAnimating = true
-                                        scope.launch {
+                                        isDraggingCard = false
+                                        // 未达到阈值或首篇不可后退：平滑回弹至原位
+                                        animJob.value = scope.launch {
+                                            animOffsetX.snapTo(dragOffsetX)
+                                            animOffsetY.snapTo(dragOffsetY)
                                             launch {
                                                 animOffsetX.animateTo(
                                                     0f,
@@ -345,13 +388,14 @@ private fun CardSwipeBox(
                                                     spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMediumLow),
                                                 )
                                             }
-                                        }.invokeOnCompletion {
-                                            isAnimating = false
+                                            launch {
+                                                animAlpha.animateTo(1f, tween(100))
+                                            }
                                         }
                                     }
                                     action == SwipeDirection.NEXT || action == SwipeDirection.PREVIOUS -> {
-                                        // 达到切换阈值：执行离场及入场动画
-                                        isAnimating = true
+                                        isDraggingCard = false
+                                        // 达到切换阈值：执行快速离场动画，换页后立即开始入场
                                         val isHorizontal = abs(totalDrag.x) >= abs(totalDrag.y)
                                         val screenW = if (containerSize.width > 0) containerSize.width.toFloat() else 1080f
                                         val screenH = if (containerSize.height > 0) containerSize.height.toFloat() else 2400f
@@ -363,49 +407,53 @@ private fun CardSwipeBox(
 
                                         if (action == SwipeDirection.NEXT) {
                                             if (isHorizontal) {
-                                                targetX = -screenW * 1.2f
-                                                targetY = animOffsetY.value
-                                                enterX = screenW * 0.35f
+                                                targetX = -screenW * 1.15f
+                                                targetY = dragOffsetY
+                                                enterX = screenW * 0.28f
                                                 enterY = 0f
                                             } else {
-                                                targetX = animOffsetX.value
-                                                targetY = -screenH * 1.2f
+                                                targetX = dragOffsetX
+                                                targetY = -screenH * 1.15f
                                                 enterX = 0f
-                                                enterY = screenH * 0.35f
+                                                enterY = screenH * 0.28f
                                             }
                                         } else {
                                             if (isHorizontal) {
-                                                targetX = screenW * 1.2f
-                                                targetY = animOffsetY.value
-                                                enterX = -screenW * 0.35f
+                                                targetX = screenW * 1.15f
+                                                targetY = dragOffsetY
+                                                enterX = -screenW * 0.28f
                                                 enterY = 0f
                                             } else {
-                                                targetX = animOffsetX.value
-                                                targetY = screenH * 1.2f
+                                                targetX = dragOffsetX
+                                                targetY = screenH * 1.15f
                                                 enterX = 0f
-                                                enterY = -screenH * 0.35f
+                                                enterY = -screenH * 0.28f
                                             }
                                         }
 
-                                        scope.launch {
-                                            launch { animOffsetX.animateTo(targetX, tween(160, easing = FastOutLinearInEasing)) }
-                                            launch { animOffsetY.animateTo(targetY, tween(160, easing = FastOutLinearInEasing)) }
-                                            launch { animAlpha.animateTo(0.15f, tween(160)) }
-                                        }.invokeOnCompletion {
-                                            if (action == SwipeDirection.NEXT) {
-                                                currentOnSwipeNext()
-                                            } else {
-                                                currentOnSwipePrevious()
-                                            }
-                                            scope.launch {
-                                                animOffsetX.snapTo(enterX)
-                                                animOffsetY.snapTo(enterY)
-                                                animAlpha.snapTo(0.2f)
-                                                launch { animOffsetX.animateTo(0f, spring(Spring.DampingRatioLowBouncy, Spring.StiffnessMedium)) }
-                                                launch { animOffsetY.animateTo(0f, spring(Spring.DampingRatioLowBouncy, Spring.StiffnessMedium)) }
-                                                launch { animAlpha.animateTo(1f, tween(180)) }
-                                            }.invokeOnCompletion {
-                                                isAnimating = false
+                                        animJob.value = scope.launch {
+                                            animOffsetX.snapTo(dragOffsetX)
+                                            animOffsetY.snapTo(dragOffsetY)
+                                            launch { animOffsetX.animateTo(targetX, tween(110, easing = FastOutLinearInEasing)) }
+                                            launch { animOffsetY.animateTo(targetY, tween(110, easing = FastOutLinearInEasing)) }
+                                            launch { animAlpha.animateTo(0.15f, tween(110)) }
+                                        }
+                                        animJob.value?.invokeOnCompletion { cause ->
+                                            if (cause == null) {
+                                                if (action == SwipeDirection.NEXT) {
+                                                    currentOnSwipeNext()
+                                                } else {
+                                                    currentOnSwipePrevious()
+                                                }
+                                                // 换页后入场动效（若用户此时又立即滑动，会被下一轮 awaitFirstDown 瞬间取消接管）
+                                                animJob.value = scope.launch {
+                                                    animOffsetX.snapTo(enterX)
+                                                    animOffsetY.snapTo(enterY)
+                                                    animAlpha.snapTo(0.35f)
+                                                    launch { animOffsetX.animateTo(0f, spring(Spring.DampingRatioLowBouncy, Spring.StiffnessMedium)) }
+                                                    launch { animOffsetY.animateTo(0f, spring(Spring.DampingRatioLowBouncy, Spring.StiffnessMedium)) }
+                                                    launch { animAlpha.animateTo(1f, tween(130)) }
+                                                }
                                             }
                                         }
                                     }
@@ -421,44 +469,44 @@ private fun CardSwipeBox(
                         if (!isDragging) {
                             if (sqrt(totalDrag.x * totalDrag.x + totalDrag.y * totalDrag.y) > touchSlop) {
                                 isDragging = true
+                                isDraggingCard = true
                                 change.consume()
                                 currentOnInteractionStart()
                             }
                         } else {
                             change.consume()
-                            scope.launch {
-                                animOffsetX.snapTo(totalDrag.x)
-                                animOffsetY.snapTo(totalDrag.y)
-                            }
+                            dragOffsetX = totalDrag.x
+                            dragOffsetY = totalDrag.y
                         }
                     }
 
                     // 手势取消保护
-                    if (isDragging && !isAnimating) {
-                        isAnimating = true
-                        scope.launch {
+                    if (isDragging && animJob.value?.isActive != true) {
+                        isDraggingCard = false
+                        animJob.value = scope.launch {
+                            animOffsetX.snapTo(dragOffsetX)
+                            animOffsetY.snapTo(dragOffsetY)
                             launch { animOffsetX.animateTo(0f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMediumLow)) }
                             launch { animOffsetY.animateTo(0f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMediumLow)) }
-                        }.invokeOnCompletion {
-                            isAnimating = false
+                            launch { animAlpha.animateTo(1f, tween(100)) }
                         }
                     }
                 }
             },
         contentAlignment = Alignment.Center,
     ) {
-        val dragDistance = sqrt(animOffsetX.value * animOffsetX.value + animOffsetY.value * animOffsetY.value)
-        val rotationDeg = (animOffsetX.value / 25f).coerceIn(-8f, 8f)
-        val scale = (1f - (dragDistance / 2600f)).coerceIn(0.92f, 1f)
-
         Box(
             modifier = Modifier.graphicsLayer {
-                translationX = animOffsetX.value
-                translationY = animOffsetY.value
-                rotationZ = rotationDeg
-                scaleX = scale
-                scaleY = scale
-                alpha = animAlpha.value
+                val ox = if (isDraggingCard) dragOffsetX else animOffsetX.value
+                val oy = if (isDraggingCard) dragOffsetY else animOffsetY.value
+                val dist = sqrt(ox * ox + oy * oy)
+                translationX = ox
+                translationY = oy
+                rotationZ = (ox / 25f).coerceIn(-8f, 8f)
+                val s = (1f - (dist / 2600f)).coerceIn(0.92f, 1f)
+                scaleX = s
+                scaleY = s
+                alpha = if (isDraggingCard) 1f else animAlpha.value
             },
             contentAlignment = Alignment.Center,
         ) {
@@ -477,9 +525,10 @@ private fun ExcerptCard(
     onPositioned: (androidx.compose.ui.geometry.Rect) -> Unit = {},
 ) {
     val appTheme = LocalAppTheme.current
-    val isDarkTheme = appTheme.themeId.isDark
-    // 适度透出底层全局山水背景纹理，同时确保核心诗词短句阅读对比度与独立卡片层级
-    val cardBg = appTheme.customTokens.cardBackground.copy(alpha = if (isDarkTheme) 0.78f else 0.65f)
+    val isDark = appTheme.themeId.isDark
+    // 全局统一主题视觉规范：卡片底色（浅色0.42f，暗色0.60f）与边框（0.5dp，浅色0.25f，暗色0.40f）
+    val cardBg = appTheme.customTokens.resolvedCardBackground(isDark)
+    val cardBorder = appTheme.customTokens.resolvedCardBorder(isDark)
 
     Surface(
         modifier = modifier
@@ -488,50 +537,100 @@ private fun ExcerptCard(
             .onGloballyPositioned { coordinates ->
                 onPositioned(coordinates.boundsInRoot())
             },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(com.shi.yun.ui.theme.ThemeVisualSpecs.CORNER_RADIUS_HOME_CARD),
         color = cardBg,
-        border = BorderStroke(0.6.dp, appTheme.customTokens.cardBorder),
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
+        border = BorderStroke(com.shi.yun.ui.theme.ThemeVisualSpecs.BORDER_WIDTH_CARD, cardBorder),
+        tonalElevation = com.shi.yun.ui.theme.ThemeVisualSpecs.ELEVATION_ZERO,
+        shadowElevation = com.shi.yun.ui.theme.ThemeVisualSpecs.ELEVATION_ZERO,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 28.dp, vertical = 36.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 28.dp, vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // 核心视觉焦点：推荐诗词短句
-            Text(
-                text = work.excerpt,
-                fontSize = 24.sp,
-                lineHeight = 42.sp,
-                fontWeight = FontWeight.Normal,
-                color = appTheme.customTokens.titleText,
-                textAlign = TextAlign.Center,
-            )
+            // 核心视觉焦点：推荐诗词短句（整句排版，绝不拆断单句）
+            val excerptLines = remember(work.excerpt) {
+                PoemTypography.splitSentenceIntoLines(work.excerpt)
+            }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                excerptLines.forEach { line ->
+                    Text(
+                        text = line,
+                        fontSize = if (excerptLines.size > 2) 21.sp else 23.sp,
+                        lineHeight = if (excerptLines.size > 2) 34.sp else 38.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = appTheme.customTokens.titleText,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // 辅助信息：朝代、作者与作品标题
+            // 辅助信息：朝代、作者与作品标题（靠右下角对齐，文字右对齐，清晰层次）
             val authorDynasty = work.formatAuthorDynasty()
-            val attributionText = if (authorDynasty.isNotEmpty()) {
-                "—— $authorDynasty《${work.title}》"
-            } else {
-                "—— 《${work.title}》"
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.End,
+            ) {
+                if (authorDynasty.isNotEmpty()) {
+                    Text(
+                        text = "—— $authorDynasty",
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = appTheme.customTokens.secondaryText,
+                        textAlign = TextAlign.End,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                }
+                Text(
+                    text = "《${work.title}》",
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = appTheme.customTokens.titleText.copy(alpha = 0.85f),
+                    textAlign = TextAlign.End,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
             }
-            Text(
-                text = attributionText,
-                fontSize = 14.sp,
-                color = appTheme.customTokens.secondaryText,
-                textAlign = TextAlign.Center,
-            )
         }
     }
 }
 
 /**
- * 推荐序列生成算法
+ * 推荐序列生成算法（面向轻量列表项）
  *
  * 保证在作品数量 > 1 时，相邻两个位置绝不出现同一首作品。
  */
+fun generateRecommendations(
+    works: List<WorkListItem>,
+    count: Int,
+    lastWork: WorkListItem? = null,
+): List<WorkListItem> {
+    if (works.isEmpty()) return emptyList()
+    if (works.size == 1) return List(count) { works.first() }
+
+    val result = mutableListOf<WorkListItem>()
+    var previous = lastWork
+
+    repeat(count) {
+        val candidates = works.filter { it.id != previous?.id }
+        val next = candidates.random()
+        result.add(next)
+        previous = next
+    }
+
+    return result
+}
+
+/**
+ * 兼容全量 [Work] 的推荐序列生成函数
+ */
+@JvmName("generateRecommendationsForWork")
 fun generateRecommendations(
     works: List<Work>,
     count: Int,

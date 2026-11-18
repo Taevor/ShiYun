@@ -151,21 +151,25 @@ fun ContainerTransformBox(
 
         // 详情页浮层及转场动画（仅在 visible 激活时进入渲染与交互拦截）
         if (visible) {
+            // 阻断层：在底层页面上方拦截所有触摸事件，杜绝穿透到底层页面与底栏
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .pointerInput(Unit) {
-                        // 彻底拦截转场层底层的所有触控事件，防止穿透到底层页面与底部导航栏
                         awaitEachGesture {
-                            val down = awaitFirstDown(requireUnconsumed = false)
-                            down.consume()
+                            awaitFirstDown(requireUnconsumed = false).consume()
                             while (true) {
                                 val event = awaitPointerEvent()
                                 event.changes.forEach { it.consume() }
                                 if (event.changes.all { !it.pressed }) break
                             }
                         }
-                    },
+                    }
+            )
+
+            // 详情页转场容器层：独立渲染并接收未被消耗的手势事件，保证详情页触控 100% 灵敏
+            Box(
+                modifier = Modifier.fillMaxSize(),
             ) {
                 if (viewportSize.width > 0f && viewportSize.height > 0f) {
                     val fullScreenRect = Rect(0f, 0f, viewportSize.width, viewportSize.height)

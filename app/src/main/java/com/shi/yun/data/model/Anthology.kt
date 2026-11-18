@@ -18,7 +18,8 @@ data class Anthology(
     val compiler: String,
     val dynasty: String,
     val targetCount: Int,
-    val editionNote: String
+    val editionNote: String,
+    val description: String = ""
 )
 
 /**

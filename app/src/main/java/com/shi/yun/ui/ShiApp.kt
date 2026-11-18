@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shi.yun.R
 import com.shi.yun.data.model.Work
+import com.shi.yun.data.model.toWork
 import com.shi.yun.data.repository.CustomFontRepository
 import com.shi.yun.data.repository.LocalCustomFontRepository
 import com.shi.yun.data.repository.LocalReadingPreferencesRepository
@@ -70,11 +71,16 @@ import com.shi.yun.ui.favorite.FavoriteScreen
 import com.shi.yun.ui.home.HomeScreen
 import com.shi.yun.ui.home.generateRecommendations
 import com.shi.yun.common.log.AppLogger
+import com.shi.yun.data.model.AuxiliaryContent
+import com.shi.yun.ui.detail.DetailContentStatus
 import com.shi.yun.ui.search.SearchScreen
 import com.shi.yun.ui.theme.AppThemeId
 import com.shi.yun.ui.theme.LocalAppTheme
 import com.shi.yun.ui.theme.ThemeBackgroundStyle
 import com.shi.yun.ui.theme.ThemeSelectionBottomSheet
+import com.shi.yun.ui.theme.TextureTestBridge
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
@@ -123,24 +129,24 @@ fun ShiApp(
         customFontRepository ?: LocalCustomFontRepository(context.applicationContext)
     }
 
-    var allWorks by remember { mutableStateOf<List<Work>?>(null) }
+    var works by remember { mutableStateOf<List<Work>>(emptyList()) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var selectedWork by remember { mutableStateOf<Work?>(null) }
     val scope = rememberCoroutineScope()
 
     fun loadData() {
         errorMessage = null
-        AppLogger.i("ShiApp", "发起全量诗词数据异步装载")
+        AppLogger.i("ShiApp", "发起轻量作品列表单次投影异步装载")
         val startTime = System.currentTimeMillis()
         scope.launch {
             try {
-                val works = repository.getAllWorks()
-                allWorks = works
+                val list = repository.getWorkList()
+                works = list.map { it.toWork() }
                 val duration = System.currentTimeMillis() - startTime
-                AppLogger.i("ShiApp", "全量诗词数据装载成功: 总数=${works.size}首, 耗时=${duration}ms")
+                AppLogger.i("ShiApp", "轻量作品数据装载成功: 总数=${list.size}首, 耗时=${duration}ms")
             } catch (e: Exception) {
                 val duration = System.currentTimeMillis() - startTime
-                AppLogger.e("ShiApp", "全量诗词数据装载失败: 耗时=${duration}ms, 原因=${e.message}", e)
+                AppLogger.e("ShiApp", "轻量作品数据装载失败: 耗时=${duration}ms, 原因=${e.message}", e)
                 errorMessage = e.message ?: "读取本地诗词数据失败"
             }
         }
@@ -155,10 +161,19 @@ fun ShiApp(
     Box(
         modifier = modifier.fillMaxSize(),
     ) {
-        // 全局主题背景体系：根据当前主题配置的 backgroundStyle 决定渲染纯竖向渐变或独立季节插画
+        // 全局主题背景体系：根据当前主题配置的 backgroundStyle 决定渲染纯色纸张纹理或独立季节插画
         when (val bgStyle = appTheme.customTokens.backgroundStyle) {
+            is ThemeBackgroundStyle.SolidWithTexture -> {
+                // 1. 六套经典主题：纯色底叠加 Linear Light 线性光纸张纹理 (Alpha=0.25f)
+                com.shi.yun.ui.theme.SolidTextureBackground(
+                    solidColor = bgStyle.solidColor,
+                    textureResId = bgStyle.textureResId,
+                    textureAlpha = bgStyle.textureAlpha,
+                )
+            }
+
             is ThemeBackgroundStyle.Gradient -> {
-                // 1. 六套经典主题：纯色竖向线性渐变，绝对不加载任何图片资源，彻底消除默认图片回退
+                // 兼容旧版渐变模式
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -205,64 +220,46 @@ fun ShiApp(
             )
         }
 
-        when {
-            // 1. 错误状态
-            errorMessage != null -> {
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Text(
-                        text = "数据加载失败",
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                    Text(
-                        text = errorMessage.orEmpty(),
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                    Button(onClick = { loadData() }) {
-                        Text(text = "重试")
-                    }
-                }
-            }
-
-            // 2. 加载中状态
-            allWorks == null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-
-            // 3. 数据加载成功：渲染主界面与详情页
-            else -> {
-                val works = allWorks.orEmpty()
-                MainContent(
-                    repository = repository,
-                    works = works,
-                    selectedWork = selectedWork,
-                    preferencesRepository = prefsRepo,
-                    themeRepository = themeRepo,
-                    customFontRepository = fontRepo,
-                    onSelectWork = { work ->
-                        AppLogger.i("Detail", "进入作品详情: ID=${work.id}, 标题=${work.title}, 朝代=${work.dynasty}, 作者=${work.author}")
-                        selectedWork = work
-                    },
-                    onDismissDetail = {
-                        AppLogger.i("Detail", "离开作品详情")
-                        selectedWork = null
-                    },
+        // 核心渲染区：解除冷启动全屏菊花门禁，直接渲染主框架界面（底栏、顶栏、背景先行）
+        if (errorMessage != null && works.isEmpty()) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = "数据加载失败",
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.error,
                 )
+                Text(
+                    text = errorMessage.orEmpty(),
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+                Button(onClick = { loadData() }) {
+                    Text(text = "重试")
+                }
             }
+        } else {
+            MainContent(
+                repository = repository,
+                works = works,
+                selectedWork = selectedWork,
+                preferencesRepository = prefsRepo,
+                themeRepository = themeRepo,
+                customFontRepository = fontRepo,
+                onSelectWork = { work ->
+                    AppLogger.i("Detail", "进入作品详情: ID=${work.id}, 标题=${work.title}, 朝代=${work.dynasty}, 作者=${work.author}")
+                    selectedWork = work
+                },
+                onDismissDetail = {
+                    AppLogger.i("Detail", "离开作品详情")
+                    selectedWork = null
+                },
+            )
         }
     }
 }
@@ -285,6 +282,8 @@ private fun MainContent(
     val readingPreferences by preferencesRepository.preferencesFlow.collectAsState()
     val currentThemeId by themeRepository.currentThemeIdFlow.collectAsState()
     var showThemeSheet by remember { mutableStateOf(false) }
+    var showTextureTestScreen by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     // 顶层状态：当前选中的主功能 Tab
     var currentTab by rememberSaveable { mutableStateOf(AppTab.HOME) }
@@ -295,22 +294,39 @@ private fun MainContent(
     }
 
     // ========== 首页状态提升（持久留存） ==========
-    val recommendationList = remember(works) {
-        mutableStateListOf<Work>().apply {
-            addAll(generateRecommendations(works = works, count = 40))
-        }
-    }
+    val recommendationList = remember { mutableStateListOf<Work>() }
+    var isHomeLoading by remember { mutableStateOf(true) }
     var homeCurrentIndex by rememberSaveable { mutableIntStateOf(0) }
     var isHomeHintShown by remember { mutableStateOf(preferencesRepository.isHomeGestureHintShown()) }
 
+    // 首次冷启动：优先极速装载首页精选经典推荐集（毫秒级响应，无需等待全量作品扫描）
+    LaunchedEffect(Unit) {
+        val startMs = System.currentTimeMillis()
+        try {
+            val initialRecs = repository.getHomeRecommendations(40)
+            if (initialRecs.isNotEmpty()) {
+                recommendationList.addAll(initialRecs)
+                val duration = System.currentTimeMillis() - startMs
+                AppLogger.i("ShiApp", "首页精选推荐集装载完成: count=${initialRecs.size}, 耗时=${duration}ms")
+            }
+        } catch (e: Exception) {
+            AppLogger.w("ShiApp", "首页精选推荐集装载异常: ${e.message}")
+        } finally {
+            isHomeLoading = false
+        }
+    }
+
+    // 滑动接近末尾时异步预取更多精选推荐
     LaunchedEffect(homeCurrentIndex) {
-        if (recommendationList.size - homeCurrentIndex <= 8 && works.isNotEmpty()) {
-            val more = generateRecommendations(
-                works = works,
-                count = 20,
-                lastWork = recommendationList.lastOrNull(),
-            )
-            recommendationList.addAll(more)
+        if (recommendationList.size - homeCurrentIndex <= 8 && recommendationList.isNotEmpty()) {
+            try {
+                val more = repository.getHomeRecommendations(20)
+                if (more.isNotEmpty()) {
+                    recommendationList.addAll(more)
+                }
+            } catch (e: Exception) {
+                AppLogger.w("ShiApp", "预取更多推荐异常: ${e.message}")
+            }
         }
     }
 
@@ -321,7 +337,7 @@ private fun MainContent(
     var selectedDimension by rememberSaveable { mutableStateOf(CategoryDimension.DYNASTY) }
     var selectedDynasty by rememberSaveable { mutableStateOf("全部") }
     var selectedGenre by rememberSaveable { mutableStateOf("ALL") }
-    var selectedAnthologyId by rememberSaveable { mutableStateOf("anth_ts300") }
+    var selectedAnthologyId by rememberSaveable { mutableStateOf("") }
     var requestVersion by remember { mutableLongStateOf(0L) }
 
     fun onDimensionChange(newDimension: CategoryDimension) {
@@ -364,14 +380,92 @@ private fun MainContent(
     var transitionSourceRect by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     var isTransitioning by remember { mutableStateOf(false) }
 
-    // 统一处理作品点击进入详情（记录来源矩形快照，并在进入转场期间防二次重入）
+    // 详情页分阶段加载与辅助内容后台预加载状态
+    var currentTargetWorkId by remember { mutableStateOf<String?>(null) }
+    var detailLoadJob by remember { mutableStateOf<Job?>(null) }
+    var auxiliaryLoadJob by remember { mutableStateOf<Job?>(null) }
+    var auxiliaryWorkId by remember { mutableStateOf<String?>(null) }
+    var currentAuxiliaryContent by remember { mutableStateOf<AuxiliaryContent?>(null) }
+    var isAuxiliaryLoading by remember { mutableStateOf(false) }
+    var detailContentStatus by remember { mutableStateOf(DetailContentStatus.LOADING) }
+
+    // 核心作品详情与辅助内容加载执行器（统一控制协程取消、目标 ID 绑定与生命周期）
+    fun loadWorkDetail(targetWork: Work) {
+        detailLoadJob?.cancel()
+        auxiliaryLoadJob?.cancel()
+        currentTargetWorkId = targetWork.id
+        auxiliaryWorkId = null
+        currentAuxiliaryContent = null
+        isAuxiliaryLoading = true
+        detailContentStatus = if (targetWork.content.isNotBlank()) DetailContentStatus.SUCCESS else DetailContentStatus.LOADING
+
+        // 2. 第二阶段：后台协程异步单篇按需加载完整作品（包含完整正文、排版）
+        detailLoadJob = scope.launch {
+            try {
+                val fullWork = repository.getWorkById(targetWork.id)
+                if (currentTargetWorkId == targetWork.id) {
+                    if (fullWork != null) {
+                        detailContentStatus = DetailContentStatus.SUCCESS
+                        onSelectWork(fullWork)
+                    } else {
+                        detailContentStatus = DetailContentStatus.NOT_FOUND
+                    }
+                }
+            } catch (e: CancellationException) {
+                // 协程正常取消时必须重新抛出，严禁当作普通加载错误捕获
+                throw e
+            } catch (e: Exception) {
+                AppLogger.w("ShiApp", "按需加载作品完整详情异常: ${e.message}")
+                if (currentTargetWorkId == targetWork.id) {
+                    detailContentStatus = DetailContentStatus.ERROR
+                }
+            }
+        }
+
+        // 3. 第三阶段：后台协程异步预加载当前作品的辅助内容（注释、译文、赏析）
+        auxiliaryLoadJob = scope.launch {
+            try {
+                val aux = repository.getAuxiliaryContent(targetWork.id)
+                if (currentTargetWorkId == targetWork.id) {
+                    auxiliaryWorkId = targetWork.id
+                    currentAuxiliaryContent = aux
+                    isAuxiliaryLoading = false
+                }
+            } catch (e: CancellationException) {
+                // 协程正常取消时必须重新抛出，严禁当作普通加载错误捕获
+                throw e
+            } catch (e: Exception) {
+                AppLogger.w("ShiApp", "预加载作品辅助内容异常: ${e.message}")
+                if (currentTargetWorkId == targetWork.id) {
+                    isAuxiliaryLoading = false
+                }
+            }
+        }
+    }
+
+    // 统一处理作品点击进入详情（记录来源矩形快照，并在进入转场期间防二次重入，三阶段平滑加载）
     fun navigateToDetail(work: Work, contextWorks: List<Work>?, sourceRect: androidx.compose.ui.geometry.Rect?) {
         if (isTransitioning || selectedWork != null) return
         isTransitioning = true
         transitionSourceRect = sourceRect
         anthologyContextWorks = contextWorks
         anthologyCurrentIndex = if (contextWorks != null) contextWorks.indexOfFirst { it.id == work.id } else -1
+
+        // 1. 第一阶段启动：优先使用列表元数据，容器转场毫秒级启动
         onSelectWork(work)
+        loadWorkDetail(work)
+    }
+
+    // 支持通过 Intent 携带 work_id 直接启动并进入指定作品详情（方便外部测试与深度链接）
+    val activity = LocalContext.current as? android.app.Activity
+    val initialWorkId = remember { activity?.intent?.getStringExtra("work_id") }
+    LaunchedEffect(initialWorkId, works) {
+        if (!initialWorkId.isNullOrBlank() && works.isNotEmpty() && selectedWork == null) {
+            val target = works.firstOrNull { it.id == initialWorkId } ?: repository.getWorkById(initialWorkId)
+            if (target != null) {
+                navigateToDetail(target, null, null)
+            }
+        }
     }
 
     // 选本内切篇：上一首（切篇后清除来源矩形，返回时自动优雅降级为淡出）
@@ -383,7 +477,9 @@ private fun MainContent(
             anthologyCurrentIndex = prevIndex
             transitionSourceRect = null // 切篇后坐标失效，标记为 null 以便返回时平滑降级
             AppLogger.i("Detail", "选本切篇 [上一首]: 序号=$prevIndex, 作品 ID=${prevWork.id}, 标题=${prevWork.title}")
+
             onSelectWork(prevWork)
+            loadWorkDetail(prevWork)
         }
     }
 
@@ -396,7 +492,9 @@ private fun MainContent(
             anthologyCurrentIndex = nextIndex
             transitionSourceRect = null // 切篇后坐标失效，标记为 null 以便返回时平滑降级
             AppLogger.i("Detail", "选本切篇 [下一首]: 序号=$nextIndex, 作品 ID=${nextWork.id}, 标题=${nextWork.title}")
+
             onSelectWork(nextWork)
+            loadWorkDetail(nextWork)
         }
     }
 
@@ -407,7 +505,6 @@ private fun MainContent(
     // ========== 收藏页状态提升与响应式数据监听 ==========
     val favoriteListState = rememberLazyListState()
     val favoriteIds by repository.favoriteIdsFlow.collectAsState()
-    val scope = rememberCoroutineScope()
 
     Box(modifier = modifier.fillMaxSize()) {
         // 详情页全屏浮层与底层页面容器转场（接管底层页面透明度，转场时平滑淡出，彻底消除文字重叠）
@@ -415,6 +512,13 @@ private fun MainContent(
             visible = selectedWork != null,
             sourceRect = transitionSourceRect,
             onDismissRequest = {
+                detailLoadJob?.cancel()
+                auxiliaryLoadJob?.cancel()
+                currentTargetWorkId = null
+                auxiliaryWorkId = null
+                currentAuxiliaryContent = null
+                isAuxiliaryLoading = false
+                detailContentStatus = DetailContentStatus.LOADING
                 anthologyContextWorks = null
                 anthologyCurrentIndex = -1
                 transitionSourceRect = null
@@ -443,6 +547,7 @@ private fun MainContent(
                                         currentIndex = homeCurrentIndex,
                                         onIndexChange = { newIndex -> homeCurrentIndex = newIndex },
                                         isHintShown = isHomeHintShown,
+                                        isLoading = isHomeLoading,
                                         onMarkHintShown = {
                                             scope.launch {
                                                 preferencesRepository.markHomeGestureHintShown()
@@ -458,6 +563,7 @@ private fun MainContent(
                                     CategoryScreen(
                                         repository = repository,
                                         works = works,
+                                        isWorkDetailOpen = selectedWork != null,
                                         dynastyListState = categoryDynastyListState,
                                         genreListState = categoryGenreListState,
                                         anthologyListState = categoryAnthologyListState,
@@ -521,6 +627,8 @@ private fun MainContent(
                 val inAnthology = anthologyContextWorks != null
                 val hasPrev = inAnthology && anthologyCurrentIndex > 0
                 val hasNxt = inAnthology && anthologyContextWorks?.let { anthologyCurrentIndex in 0 until it.size - 1 } == true
+                val effectiveAuxiliary = if (auxiliaryWorkId == work.id) currentAuxiliaryContent else null
+                val auxiliaryLoading = isAuxiliaryLoading && effectiveAuxiliary == null
 
                 DetailScreen(
                     work = work,
@@ -547,6 +655,12 @@ private fun MainContent(
                         }
                     },
                     customFontRepository = customFontRepository,
+                    auxiliaryContent = effectiveAuxiliary,
+                    isAuxiliaryLoading = auxiliaryLoading,
+                    contentStatus = detailContentStatus,
+                    onRetryLoad = {
+                        loadWorkDetail(work)
+                    },
                 )
             }
         }
@@ -563,6 +677,18 @@ private fun MainContent(
                 onDismissRequest = {
                     showThemeSheet = false
                 },
+                onOpenTextureTest = {
+                    showTextureTestScreen = true
+                },
+            )
+        }
+
+        // 独立纸张纹理测试全屏界面 (仅在 Debug 开发阶段通过桥接挂载，Release 彻底剔除)
+        if (showTextureTestScreen && TextureTestBridge.isAvailable) {
+            TextureTestBridge.RenderTestScreen(
+                onDismiss = {
+                    showTextureTestScreen = false
+                },
             )
         }
     }
@@ -577,16 +703,22 @@ private fun ShiBottomNavigationBar(
     onTabSelected: (AppTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val appTheme = LocalAppTheme.current
+    val isDark = appTheme.themeId.isDark
+    // 全局统一主题视觉规范：底部导航栏底色（浅色0.75f，暗色0.85f）与分割线（0.5dp，浅色0.12f，暗色0.20f）
+    val navBg = appTheme.customTokens.resolvedNavBackground(isDark)
+    val activeIconColor = appTheme.customTokens.bottomNavIconColor
+
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
-        shadowElevation = 2.dp,
+        color = navBg,
+        tonalElevation = com.shi.yun.ui.theme.ThemeVisualSpecs.ELEVATION_ZERO,
+        shadowElevation = com.shi.yun.ui.theme.ThemeVisualSpecs.ELEVATION_ZERO,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             HorizontalDivider(
-                thickness = 0.5.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                thickness = com.shi.yun.ui.theme.ThemeVisualSpecs.DIVIDER_HEIGHT_NAV,
+                color = appTheme.customTokens.resolvedNavDividerColor(isDark),
             )
             Row(
                 modifier = Modifier
@@ -598,9 +730,9 @@ private fun ShiBottomNavigationBar(
             AppTab.entries.forEach { tab ->
                 val isSelected = currentTab == tab
                 val iconTint = if (isSelected) {
-                    MaterialTheme.colorScheme.primary
+                    activeIconColor
                 } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                    activeIconColor.copy(alpha = 0.50f)
                 }
 
                 Box(

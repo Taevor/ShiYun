@@ -51,6 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shi.yun.common.log.AppLogger
 import com.shi.yun.data.model.ReadingFontFamily
 import com.shi.yun.data.model.ReadingPreferences
 import com.shi.yun.data.repository.CustomFontRepository
@@ -152,7 +153,10 @@ fun ReadingSettingsSheet(
                 )
 
                 TextButton(
-                    onClick = onResetToDefault,
+                    onClick = {
+                        AppLogger.interaction("ReadingSettingsSheet", "ResetToDefaultButton", "Click", "SUCCESS", "重置排版偏好为默认值")
+                        onResetToDefault()
+                    },
                 ) {
                     Text(
                         text = "恢复默认",
@@ -171,12 +175,18 @@ fun ReadingSettingsSheet(
             ) {
                 Tab(
                     selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
+                    onClick = {
+                        AppLogger.interaction("ReadingSettingsSheet", "Tab_Basic", "Click", "SUCCESS", "切换至 [基础外观]")
+                        selectedTab = 0
+                    },
                     text = { Text("基础外观", fontSize = 14.sp) },
                 )
                 Tab(
                     selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
+                    onClick = {
+                        AppLogger.interaction("ReadingSettingsSheet", "Tab_Advanced", "Click", "SUCCESS", "切换至 [高级排版]")
+                        selectedTab = 1
+                    },
                     text = { Text("高级排版", fontSize = 14.sp) },
                 )
             }
@@ -228,6 +238,7 @@ fun ReadingSettingsSheet(
                                         shape = RoundedCornerShape(8.dp),
                                     )
                                     .clickable {
+                                        AppLogger.interaction("ReadingSettingsSheet", "CustomFontItem", "Click", "SUCCESS", "选用字体: ${item.name} (${item.id})")
                                         onPreferencesChange(
                                             preferences.copy(
                                                 customFontId = item.id,
@@ -271,6 +282,7 @@ fun ReadingSettingsSheet(
                                         .size(28.dp)
                                         .clip(CircleShape)
                                         .clickable {
+                                            AppLogger.interaction("ReadingSettingsSheet", "DeleteCustomFont", "Click", "SUCCESS", "删除字体: ${item.name} (${item.id})")
                                             scope.launch {
                                                 customFontRepository?.deleteFont(item.id)
                                                 customFonts = customFontRepository?.getCustomFonts().orEmpty()
@@ -310,6 +322,7 @@ fun ReadingSettingsSheet(
                                 shape = RoundedCornerShape(8.dp),
                             )
                             .clickable(enabled = !isImporting) {
+                                AppLogger.interaction("ReadingSettingsSheet", "ImportCustomFontButton", "Click", "SUCCESS", "唤起系统文件选择器导入字体")
                                 fontPickerLauncher.launch(
                                     arrayOf(
                                         "font/ttf",
@@ -450,6 +463,7 @@ fun ReadingSettingsSheet(
                         Switch(
                             checked = preferences.firstLineIndentSpaces >= 2,
                             onCheckedChange = { checked ->
+                                AppLogger.interaction("ReadingSettingsSheet", "FirstLineIndentSwitch", "Toggle", "SUCCESS", "缩进=${if (checked) 2 else 0}")
                                 onPreferencesChange(
                                     preferences.copy(firstLineIndentSpaces = if (checked) 2 else 0)
                                 )
@@ -508,7 +522,10 @@ private fun <T> CompactChoiceRow(
                             if (isSelected) MaterialTheme.colorScheme.primaryContainer
                             else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                         )
-                        .clickable { onSelect(option) }
+                        .clickable {
+                            AppLogger.interaction("ReadingSettingsSheet", "$label Choice", "Click", "SUCCESS", "选择: $title")
+                            onSelect(option)
+                        }
                         .padding(vertical = 6.dp),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -562,6 +579,7 @@ private fun StepperSliderRow(
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                 .clickable(enabled = currentValue > range.start) {
                     val newVal = (currentValue - step).coerceIn(range.start, range.endInclusive)
+                    AppLogger.interaction("ReadingSettingsSheet", "$label StepDown", "Click", "SUCCESS", "$currentValue -> $newVal")
                     onValueChange(newVal)
                 },
             contentAlignment = Alignment.Center,
@@ -578,6 +596,9 @@ private fun StepperSliderRow(
         Slider(
             value = currentValue,
             onValueChange = onValueChange,
+            onValueChangeFinished = {
+                AppLogger.interaction("ReadingSettingsSheet", "$label Slider", "DragFinished", "SUCCESS", "当前值: $currentValue")
+            },
             valueRange = range,
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
@@ -597,6 +618,7 @@ private fun StepperSliderRow(
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                 .clickable(enabled = currentValue < range.endInclusive) {
                     val newVal = (currentValue + step).coerceIn(range.start, range.endInclusive)
+                    AppLogger.interaction("ReadingSettingsSheet", "$label StepUp", "Click", "SUCCESS", "$currentValue -> $newVal")
                     onValueChange(newVal)
                 },
             contentAlignment = Alignment.Center,

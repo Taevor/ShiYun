@@ -30,6 +30,8 @@ import com.shi.yun.data.local.repository.RoomWorkRepository
 import com.shi.yun.data.model.AttributionStatus
 import com.shi.yun.data.model.Genre
 import com.shi.yun.data.model.LayoutType
+import com.shi.yun.data.model.formatAuthorDynasty
+import com.shi.yun.data.model.formatAuthorDynastyGenre
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -666,6 +668,100 @@ class RoomWorkRepositoryTest {
         assertEquals("江南好", result.subtitle)
         assertEquals("江南好，风景旧曾谙。", result.content)
         assertNull(result.auxiliary)
+    }
+
+    // =========================================================================
+    // 测试 12：轻量列表投影高效查询 (getWorkList)
+    // =========================================================================
+    @Test
+    fun testGetWorkList_SingleProjectionEfficiency() = runBlocking {
+        insertBaseMetadataAndDictionaries()
+
+        val author = AuthorEntity(authorId = "author_libai", standardName = "李白", dynastyId = "dynasty_tang")
+        db.categoryDao().insertAuthors(listOf(author))
+
+        val work = WorkEntity(
+            workId = "work_jys",
+            standardTitle = "静夜思",
+            identityStatus = "NORMAL",
+            sortOrder = 1,
+            createdAtEpochMs = 1000L,
+            updatedAtEpochMs = 1000L
+        )
+        db.workDao().insertWork(work)
+
+        val version = WorkVersionEntity(
+            workVersionId = "wv_jys_v1",
+            workId = "work_jys",
+            versionCode = 1,
+            editionName = "底本",
+            layoutType = LayoutType.FIVE_JUEJU.code,
+            excerpt = "床前明月光，疑是地上霜。",
+            preface = null,
+            createdAtEpochMs = 1000L
+        )
+        db.workDao().insertWorkVersion(version)
+
+        val workAuthor = WorkAuthorEntity(workVersionId = "wv_jys_v1", authorId = "author_libai", authorOrder = 1)
+        db.workDao().insertWorkAuthors(listOf(workAuthor))
+
+        val classificationDynasty = WorkVersionClassificationEntity("wv_jys_v1", "DYNASTY", "dynasty_tang", updatedAtEpochMs = 1000L)
+        val classificationGenre = WorkVersionClassificationEntity("wv_jys_v1", "GENRE", "genre_poem", updatedAtEpochMs = 1000L)
+        db.workDao().insertWorkVersionClassifications(listOf(classificationDynasty, classificationGenre))
+
+        val list = repository.getWorkList()
+        assertEquals(1, list.size)
+        val item = list.first()
+        assertEquals("work_jys", item.id)
+        assertEquals("静夜思", item.title)
+        assertEquals("李白", item.author)
+        assertEquals("唐", item.dynasty)
+        assertEquals(Genre.POEM, item.genre)
+        assertEquals("床前明月光，疑是地上霜。", item.excerpt)
+        assertEquals("〔唐〕李白", item.formatAuthorDynasty())
+        assertEquals("〔唐〕李白  ·  诗", item.formatAuthorDynastyGenre())
+    }
+
+    // =========================================================================
+    // 测试 13：赏析内部元数据清洗 (cleanAppreciationPayload)
+    // =========================================================================
+    @Test
+    fun testCleanAppreciationPayload() {
+        val jsonPayload = """
+            [
+              {
+                "bookId": "60fc038f34bfda01e0e8f5ac",
+                "bookTitle": "唐宋词鉴赏辞典",
+                "articleId": "610e74b17d0ac1145494bb7a",
+                "shortContent": "这是一篇关于苏轼赤壁怀古的精美赏析。",
+                "authors": ["高", "原"],
+                "pressName": "上海辞书出版社"
+              },
+              {
+                "bookId": "60fc038f34bfda01e0e8f5ad",
+                "bookTitle": "宋词鉴赏辞典",
+                "articleId": "610e74b17d0ac1145494bb7b",
+                "shortContent": "这是一篇关于苏轼赤壁怀古的精美赏析。",
+                "authors": ["高", "原"],
+                "pressName": "上海辞书出版社"
+              }
+            ]
+        """.trimIndent()
+
+        val cleaned = WorkEntityMapper.cleanAppreciationPayload(jsonPayload)
+        assertNotNull(cleaned)
+        // 验证已彻底剥离内部 ID
+        assertFalse(cleaned!!.contains("bookId"))
+        assertFalse(cleaned.contains("articleId"))
+        assertFalse(cleaned.contains("60fc038f34bfda01e0e8f5ac"))
+        // 验证去重后只包含一篇内容
+        assertTrue(cleaned.contains("这是一篇关于苏轼赤壁怀古的精美赏析。"))
+        assertTrue(cleaned.contains("选自《唐宋词鉴赏辞典》· 高原"))
+
+        // 测试普通纯文本残留清洗
+        val plainTextWithId = "正常赏析正文第一段。\nbookId: 1234567\narticleId: 890123\n正常赏析正文第二段。"
+        val cleanedPlain = WorkEntityMapper.cleanAppreciationPayload(plainTextWithId)
+        assertEquals("正常赏析正文第一段。\n正常赏析正文第二段。", cleanedPlain)
     }
 
     // =========================================================================

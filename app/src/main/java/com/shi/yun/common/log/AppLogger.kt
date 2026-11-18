@@ -76,6 +76,9 @@ object AppLogger {
     @Volatile
     private var isInitialized = false
 
+    // 全局手势关联 ID 计数器，确保同一手势事件（按下、释放、取消、识别）能跨组件串联
+    private val gestureSequenceCounter = java.util.concurrent.atomic.AtomicLong(1000L)
+
     // 单线程守护线程池，用于保证日志追加写入绝对线程安全且非阻塞
     private val writerExecutor = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "ShiYun-AppLogger-Worker").apply {
@@ -127,9 +130,9 @@ object AppLogger {
     }
 
     /**
-     * 等待所有后台写入任务完成（供测试验证异步写入结果）
+     * 等待所有后台写入任务完成（供测试或关键生命周期节点落盘）
      */
-    fun flushForTesting(timeoutMs: Long = 3000L) {
+    fun flush(timeoutMs: Long = 2000L) {
         val future = writerExecutor.submit { }
         try {
             future.get(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
@@ -138,13 +141,22 @@ object AppLogger {
     }
 
     /**
-     * 注册全局未捕获异常崩溃日志兜底
+     * 兼容旧测试调用的刷盘方法
+     */
+    fun flushForTesting(timeoutMs: Long = 3000L) {
+        flush(timeoutMs)
+    }
+
+    /**
+     * 注册全局未捕获异常崩溃日志兜底（进程终止前同步刷盘）
      */
     private fun installCrashHandler() {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             try {
                 e("CrashHandler", "捕获到未捕获异常，线程=[${thread.name}]: ${throwable.message}", throwable)
+                // 确保崩溃日志在进程终结前落盘
+                flush(2000L)
             } catch (_: Exception) {
             } finally {
                 defaultHandler?.uncaughtException(thread, throwable)
@@ -166,6 +178,106 @@ object AppLogger {
 
     fun e(tag: String, message: String, throwable: Throwable? = null) {
         log(LogLevel.ERROR, tag, message, throwable)
+    }
+
+    /**
+     * 生成唯一手势关联 ID (例如 G_1001)
+     */
+    fun generateGestureId(): String = "G_${gestureSequenceCounter.incrementAndGet()}"
+
+    /**
+     * 手势诊断日志：记录手势开始、释放、取消、识别与消费
+     */
+    fun gesture(
+        gestureId: String?,
+        page: String,
+        target: String,
+        stage: String,
+        detail: String = "",
+    ) {
+        val idStr = gestureId ?: "-"
+        val msg = "手势ID=[$idStr] 页面=[$page] 目标=[$target] 阶段=[$stage]${if (detail.isNotBlank()) " 详情=$detail" else ""}"
+        d("Gesture", msg)
+    }
+
+    /**
+     * 用户重要交互事件日志：记录点击、输入、切换及其结果与耗时
+     */
+    fun interaction(
+        page: String,
+        widget: String,
+        event: String,
+        result: String = "SUCCESS",
+        detail: String? = null,
+        durationMs: Long? = null,
+        throwable: Throwable? = null,
+    ) {
+        val msg = buildString {
+            append("页面=[$page] 控件=[$widget] 事件=[$event] 结果=[$result]")
+            if (durationMs != null) append(" 耗时=${durationMs}ms")
+            if (!detail.isNullOrBlank()) append(" 详情=$detail")
+        }
+        if (result == "FAILED" || throwable != null) {
+            w("Interaction", msg, throwable)
+        } else {
+            i("Interaction", msg)
+        }
+    }
+
+    /**
+     * 关键状态变动日志（仅在状态实质变化时记录，杜绝页面重组刷屏）
+     */
+    fun stateChange(
+        page: String,
+        property: String,
+        to: Any?,
+        reason: String? = null,
+    ) {
+        val msg = buildString {
+            append("页面=[$page] 属性=[$property] 现值=[$to]")
+            if (!reason.isNullOrBlank()) append(" 原因=$reason")
+        }
+        i("StateChange", msg)
+    }
+
+    /**
+     * 数据库与数据操作日志：记录耗时、结果与脱敏信息
+     */
+    fun dataOp(
+        operation: String,
+        target: String,
+        result: String = "SUCCESS",
+        durationMs: Long? = null,
+        detail: String? = null,
+        throwable: Throwable? = null,
+    ) {
+        val msg = buildString {
+            append("操作=[$operation] 目标=[$target] 结果=[$result]")
+            if (durationMs != null) append(" 耗时=${durationMs}ms")
+            if (!detail.isNullOrBlank()) append(" 详情=$detail")
+        }
+        if (result == "FAILED" || throwable != null) {
+            e("Database", msg, throwable)
+        } else {
+            d("Database", msg)
+        }
+    }
+
+    /**
+     * 页面性能监控日志：耗时统计与超时报警
+     */
+    fun perf(
+        page: String,
+        action: String,
+        durationMs: Long,
+        thresholdMs: Long = 300L,
+        detail: String? = null,
+    ) {
+        if (durationMs > thresholdMs) {
+            w("Performance", "性能警告: 页面=[$page] 动作=[$action] 耗时=${durationMs}ms (超过阈值${thresholdMs}ms)${if (detail != null) " 详情=$detail" else ""}")
+        } else {
+            d("Performance", "性能指标: 页面=[$page] 动作=[$action] 耗时=${durationMs}ms${if (detail != null) " 详情=$detail" else ""}")
+        }
     }
 
     /**
@@ -329,11 +441,33 @@ object AppLogger {
             errorMessage = "日志系统尚未初始化",
         )
 
+        // 导出前强制等待在途异步写入落盘
+        flush(1000L)
+
         val timestampStr = synchronized(exportFileNameFormat) { exportFileNameFormat.format(Date()) }
         val exportFileName = "shiyun_log_$timestampStr.txt"
         val relativeSubDir = "${Environment.DIRECTORY_DOWNLOADS}/诗云日志"
 
         return try {
+            // 获取应用真实版本信息
+            val (verName, verCode) = try {
+                val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    context.packageManager.getPackageInfo(context.packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0))
+                } else {
+                    @Suppress("DEPRECATION")
+                    context.packageManager.getPackageInfo(context.packageName, 0)
+                }
+                val code = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    pInfo.longVersionCode
+                } else {
+                    @Suppress("DEPRECATION")
+                    pInfo.versionCode.toLong()
+                }
+                pInfo.versionName to code
+            } catch (_: Exception) {
+                "未知" to -1L
+            }
+
             // 按历史时序收集所有日志文件（app_5.log -> ... -> app_1.log -> app.log）
             val logFilesToExport = mutableListOf<File>()
             for (i in MAX_BACKUP_FILES downTo 1) {
@@ -346,6 +480,8 @@ object AppLogger {
             if (active.exists() && active.length() > 0) {
                 logFilesToExport.add(active)
             }
+
+            val totalLogBytes = logFilesToExport.sumOf { it.length() }
 
             val resolver = context.applicationContext.contentResolver
             val contentValues = ContentValues().apply {
@@ -363,14 +499,35 @@ object AppLogger {
 
             var writtenBytes = 0L
             resolver.openOutputStream(targetUri)?.use { outputStream ->
-                // 1. 写入导出头部信息
+                // 1. 写入结构化导出头部诊断信息
                 val header = buildString {
                     append("================================================================\n")
-                    append("诗云应用运行日志导出文件\n")
+                    append("诗云应用运行日志导出文件 (ShiYun Diagnostic Report)\n")
+                    append("================================================================\n")
                     append("导出时间: ").append(synchronized(dateFormat) { dateFormat.format(Date()) }).append("\n")
-                    append("设备信息: ").append(Build.MANUFACTURER).append(" ").append(Build.MODEL).append("\n")
-                    append("系统版本: Android SDK ").append(Build.VERSION.SDK_INT).append(" (").append(Build.VERSION.RELEASE).append(")\n")
-                    append("日志文件数: ").append(logFilesToExport.size).append("\n")
+                    append("设备厂商: ").append(Build.MANUFACTURER).append("\n")
+                    append("设备型号: ").append(Build.MODEL).append("\n")
+                    append("系统版本: Android SDK ").append(Build.VERSION.SDK_INT).append(" (Android ").append(Build.VERSION.RELEASE).append(")\n")
+                    append("应用包名: ").append(context.packageName).append("\n")
+                    append("应用版本: ").append(verName).append(" (versionCode: ").append(verCode).append(")\n")
+                    append("日志文件数: ").append(logFilesToExport.size).append(" 个 (总大小: ").append(totalLogBytes / 1024).append(" KB)\n\n")
+
+                    append("--- [归档文件列表清单] ---\n")
+                    logFilesToExport.forEachIndexed { index, file ->
+                        val fileType = if (file.name == ACTIVE_LOG_FILE) "当前活跃日志" else "历史轮换归档"
+                        val lastMod = synchronized(dateFormat) { dateFormat.format(Date(file.lastModified())) }
+                        append("${index + 1}. ${file.name} ($fileType) - ${file.length() / 1024} KB, 最后更新: $lastMod\n")
+                    }
+                    append("\n")
+
+                    append("--- [日志分类与关键词索引说明] ---\n")
+                    append("* [Interaction]   : 用户交互事件 (控件点击、页面跳转、操作耗时与结果)\n")
+                    append("* [Gesture]       : 手势诊断追踪 (手势ID关联、DOWN/UP/CANCEL/DOUBLE_TAP/滚动)\n")
+                    append("* [StateChange]   : 核心状态变化 (收藏状态、排版设置、主题切换、面板状态)\n")
+                    append("* [Database]      : 数据层操作 (Room DAO 读写耗时、收藏持久化、作品查询)\n")
+                    append("* [Performance]   : 性能监控指标 (操作耗时统计、超过阈值耗时警告)\n")
+                    append("* [CrashHandler]  : 未捕获异常与致命崩溃堆栈兜底记录\n")
+                    append("* [Navigation]    : 路由导航流转 (底部Tab切换、详情页进退、选本切篇)\n")
                     append("================================================================\n\n")
                 }
                 val headerBytes = header.toByteArray(Charsets.UTF_8)

@@ -93,4 +93,30 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onStart() {
+        super.onStart()
+        AppLogger.i("MainActivity", "Activity onStart (进入前台可见状态)")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        AppLogger.i("MainActivity", "Activity onResume (获得用户交互焦点)")
+    }
+
+    override fun onPause() {
+        super.onPause()
+        AppLogger.i("MainActivity", "Activity onPause (失去用户交互焦点)")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        AppLogger.i("MainActivity", "Activity onStop (进入后台不可见状态)")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        AppLogger.i("MainActivity", "Activity onDestroy (Activity 销毁)")
+        AppLogger.flush(1000L)
+    }
 }

@@ -51,6 +51,67 @@ interface WorkDao {
     @Query("SELECT * FROM works WHERE identity_status != 'DEPRECATED' ORDER BY sort_order ASC, created_at_epoch_ms ASC")
     suspend fun getAllActiveWorks(): List<WorkEntity>
 
+    @Query("""
+        SELECT 
+            w.work_id AS work_id,
+            w.standard_title AS standard_title,
+            COALESCE(a.standard_name, '佚名') AS author_name,
+            COALESCE(d.standard_name, da.standard_name, '') AS dynasty_name,
+            COALESCE(g.standard_name, wvc_g.classification_id, 'poem') AS genre_code,
+            COALESCE(wv.excerpt, substr(cc.content_payload, 1, instr(cc.content_payload || char(10), char(10)) - 1), '') AS excerpt
+        FROM works w
+        LEFT JOIN release_work_entries rwe ON w.work_id = rwe.work_id
+        LEFT JOIN app_release_pointer arp ON rwe.release_id = arp.current_release_id AND arp.pointer_id = 1
+        LEFT JOIN work_versions wv ON (
+            (rwe.work_version_id IS NOT NULL AND wv.work_version_id = rwe.work_version_id)
+            OR (rwe.work_version_id IS NULL AND wv.work_id = w.work_id)
+        )
+        LEFT JOIN work_authors wa ON wv.work_version_id = wa.work_version_id AND wa.author_order = 1
+        LEFT JOIN authors a ON wa.author_id = a.author_id
+        LEFT JOIN work_version_classifications wvc_d ON wv.work_version_id = wvc_d.work_version_id AND wvc_d.dimension_type = 'DYNASTY'
+        LEFT JOIN dynasties d ON wvc_d.classification_id = d.dynasty_id
+        LEFT JOIN dynasties da ON a.dynasty_id = da.dynasty_id
+        LEFT JOIN work_version_classifications wvc_g ON wv.work_version_id = wvc_g.work_version_id AND wvc_g.dimension_type = 'GENRE'
+        LEFT JOIN genres g ON wvc_g.classification_id = g.genre_id
+        LEFT JOIN work_version_contents wvc_c ON wv.work_version_id = wvc_c.work_version_id AND wvc_c.component_type = 'CONTENT'
+        LEFT JOIN content_components cc ON wvc_c.component_id = cc.component_id
+        WHERE w.identity_status != 'DEPRECATED'
+        GROUP BY w.work_id
+        ORDER BY w.sort_order ASC, w.created_at_epoch_ms ASC
+    """)
+    suspend fun getAllWorkListProjections(): List<WorkListItemProjection>
+
+    @Query("SELECT work_id FROM release_work_entries WHERE release_id = :releaseId")
+    suspend fun getWorkIdsByRelease(releaseId: String): List<String>
+
+    @Query("""
+        SELECT 
+            w.work_id AS work_id,
+            w.standard_title AS standard_title,
+            COALESCE(a.standard_name, '佚名') AS author_name,
+            COALESCE(d.standard_name, da.standard_name, '') AS dynasty_name,
+            COALESCE(g.standard_name, wvc_g.classification_id, 'poem') AS genre_code,
+            COALESCE(wv.excerpt, substr(cc.content_payload, 1, instr(cc.content_payload || char(10), char(10)) - 1), '') AS excerpt
+        FROM works w
+        LEFT JOIN release_work_entries rwe ON w.work_id = rwe.work_id AND rwe.release_id = 'release_v1_1'
+        LEFT JOIN work_versions wv ON (
+            (rwe.work_version_id IS NOT NULL AND wv.work_version_id = rwe.work_version_id)
+            OR (rwe.work_version_id IS NULL AND wv.work_id = w.work_id)
+        )
+        LEFT JOIN work_authors wa ON wv.work_version_id = wa.work_version_id AND wa.author_order = 1
+        LEFT JOIN authors a ON wa.author_id = a.author_id
+        LEFT JOIN work_version_classifications wvc_d ON wv.work_version_id = wvc_d.work_version_id AND wvc_d.dimension_type = 'DYNASTY'
+        LEFT JOIN dynasties d ON wvc_d.classification_id = d.dynasty_id
+        LEFT JOIN dynasties da ON a.dynasty_id = da.dynasty_id
+        LEFT JOIN work_version_classifications wvc_g ON wv.work_version_id = wvc_g.work_version_id AND wvc_g.dimension_type = 'GENRE'
+        LEFT JOIN genres g ON wvc_g.classification_id = g.genre_id
+        LEFT JOIN work_version_contents wvc_c ON wv.work_version_id = wvc_c.work_version_id AND wvc_c.component_type = 'CONTENT'
+        LEFT JOIN content_components cc ON wvc_c.component_id = cc.component_id
+        WHERE w.work_id IN (:workIds)
+        GROUP BY w.work_id
+    """)
+    suspend fun getWorkListProjectionsByIds(workIds: List<String>): List<WorkListItemProjection>
+
     @Query("SELECT * FROM work_versions WHERE work_id = :workId ORDER BY version_code DESC")
     suspend fun getVersionsByWorkId(workId: String): List<WorkVersionEntity>
 
@@ -87,6 +148,45 @@ interface WorkDao {
         ORDER BY w.sort_order ASC
     """)
     suspend fun searchWorks(keyword: String): List<WorkEntity>
+
+    @Query("""
+        SELECT 
+            w.work_id AS work_id,
+            w.standard_title AS standard_title,
+            COALESCE(a.standard_name, '佚名') AS author_name,
+            COALESCE(d.standard_name, da.standard_name, '') AS dynasty_name,
+            COALESCE(g.standard_name, wvc_g.classification_id, 'poem') AS genre_code,
+            COALESCE(wv.excerpt, substr(cc.content_payload, 1, instr(cc.content_payload || char(10), char(10)) - 1), '') AS excerpt
+        FROM works w
+        INNER JOIN work_versions wv ON w.work_id = wv.work_id
+        INNER JOIN work_version_contents wvc ON wv.work_version_id = wvc.work_version_id AND wvc.component_type = 'CONTENT'
+        INNER JOIN content_components cc ON wvc.component_id = cc.component_id
+        LEFT JOIN work_authors wa ON wv.work_version_id = wa.work_version_id
+        LEFT JOIN authors a ON wa.author_id = a.author_id
+        LEFT JOIN work_version_classifications wvc_d ON wv.work_version_id = wvc_d.work_version_id AND wvc_d.dimension_type = 'DYNASTY'
+        LEFT JOIN dynasties d ON wvc_d.classification_id = d.dynasty_id
+        LEFT JOIN dynasties da ON a.dynasty_id = da.dynasty_id
+        LEFT JOIN work_version_classifications wvc_g ON wv.work_version_id = wvc_g.work_version_id AND wvc_g.dimension_type = 'GENRE'
+        LEFT JOIN genres g ON wvc_g.classification_id = g.genre_id
+        WHERE w.identity_status != 'DEPRECATED'
+          AND (w.standard_title LIKE '%' || :keyword || '%'
+               OR cc.content_payload LIKE '%' || :keyword || '%'
+               OR a.standard_name LIKE '%' || :keyword || '%'
+               OR d.standard_name LIKE '%' || :keyword || '%'
+               OR da.standard_name LIKE '%' || :keyword || '%')
+        GROUP BY w.work_id
+        ORDER BY
+            CASE
+                WHEN a.standard_name = :keyword THEN 1
+                WHEN w.standard_title = :keyword THEN 2
+                WHEN a.standard_name LIKE :keyword || '%' THEN 3
+                WHEN w.standard_title LIKE :keyword || '%' THEN 4
+                ELSE 5
+            END,
+            w.sort_order ASC
+        LIMIT :limit
+    """)
+    suspend fun searchWorkProjections(keyword: String, limit: Int = 100): List<WorkListItemProjection>
 
     @Query("SELECT COUNT(*) FROM works")
     suspend fun getWorkCount(): Int
@@ -157,3 +257,15 @@ interface WorkDao {
     """)
     suspend fun getAuthorsByVersionId(workVersionId: String): List<AuthorEntity>
 }
+
+/**
+ * 首页与分类列表轻量投影数据类
+ */
+data class WorkListItemProjection(
+    @androidx.room.ColumnInfo(name = "work_id") val workId: String,
+    @androidx.room.ColumnInfo(name = "standard_title") val standardTitle: String,
+    @androidx.room.ColumnInfo(name = "author_name") val authorName: String?,
+    @androidx.room.ColumnInfo(name = "dynasty_name") val dynastyName: String?,
+    @androidx.room.ColumnInfo(name = "genre_code") val genreCode: String?,
+    @androidx.room.ColumnInfo(name = "excerpt") val excerpt: String?
+)

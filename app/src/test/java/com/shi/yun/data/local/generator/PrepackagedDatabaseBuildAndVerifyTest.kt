@@ -34,10 +34,8 @@ class PrepackagedDatabaseBuildAndVerifyTest {
     fun setUp() {
         context = ApplicationProvider.getApplicationContext<Context>()
 
-        // 目标预置数据库定位在 app/src/main/assets/database/shiyun.db
-        val projectRoot = File(".").canonicalFile
-        val assetsDir = File(projectRoot, "src/main/assets/database")
-        targetAssetsDbFile = File(assetsDir, "shiyun.db")
+        // 测试输出定位在隔离的缓存目录，避免覆盖生产 assets/database/shiyun.db
+        targetAssetsDbFile = File(context.cacheDir, "test_prepackaged_shiyun.db")
 
         // 读取验收通过的 100 首纯正 poems-db 真实样本
         val resource = javaClass.classLoader?.getResource("fixtures/poems_db_pure_100_records.json")
@@ -182,7 +180,7 @@ class PrepackagedDatabaseBuildAndVerifyTest {
         try {
             val repository = RoomWorkRepository(appDb, Dispatchers.Unconfined)
             val works = repository.getAllWorks()
-            assertEquals("首次启动从 assets 预置库直接解压读取，作品数必须为 100", 100, works.size)
+            assertEquals("首次启动从 assets 预置库直接解压读取，作品数必须为 12188", 12188, works.size)
 
             val randomWork = repository.getRandomWork()
             assertNotNull("随机推荐必须能直接读取预置作品", randomWork)
