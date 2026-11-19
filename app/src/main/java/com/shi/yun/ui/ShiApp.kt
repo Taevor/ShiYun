@@ -707,7 +707,8 @@ private fun ShiBottomNavigationBar(
     val isDark = appTheme.themeId.isDark
     // 全局统一主题视觉规范：底部导航栏底色（浅色0.75f，暗色0.85f）与分割线（0.5dp，浅色0.12f，暗色0.20f）
     val navBg = appTheme.customTokens.resolvedNavBackground(isDark)
-    val activeIconColor = appTheme.customTokens.bottomNavIconColor
+    // 0.2.0 主题修复：经典主题自动继承当前实际生效的 colorScheme.primary，四季主题保持独立配置
+    val activeIconColor = appTheme.resolvedNavIconColor
 
     Surface(
         modifier = modifier.fillMaxWidth(),

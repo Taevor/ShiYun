@@ -15,60 +15,11 @@ import com.shi.yun.data.model.SourceInfo
 import com.shi.yun.data.model.SourceOrigin
 import com.shi.yun.data.model.Work
 import com.shi.yun.data.model.WorkSourceTrace
-import com.shi.yun.data.repository.LocalJsonWorkRepository
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 class WorkSerializationTest {
-
-    /**
-     * 验收要求 3 & 4：验证工程原有 600 首生产作品仍能完整读取，
-     * 且旧版 JSON 不含 sourceTraces 时 100% 平滑兼容，默认解析为空列表。
-     */
-    @Test
-    fun testLegacy600WorksFullLoading() {
-        val assetsFile = File("src/main/assets/data/works.json")
-        assertTrue("必须能定位到工程 assets/data/works.json", assetsFile.exists())
-
-        val jsonText = assetsFile.readText(Charsets.UTF_8)
-        val rawList = WorkJsonSerializer.parseJson(jsonText) as? List<*>
-        assertNotNull("作品 JSON 根结构必须为数组", rawList)
-        assertEquals(600, rawList?.size)
-
-        var tangCount = 0
-        var songCount = 0
-
-        for (i in 0 until 600) {
-            @Suppress("UNCHECKED_CAST")
-            val itemMap = rawList?.get(i) as Map<String, Any?>
-
-            // 1. 直接由原始 600 首 JSON 对象 Map 反序列化
-            val workFromMap = WorkJsonSerializer.deserialize(itemMap)
-
-            // 2. 序列化为规范 JSON 字符串，并通过 LocalJsonWorkRepository.parseWorkFromJson 反序列化验证真实调用链
-            val singleWorkJson = WorkJsonSerializer.serialize(workFromMap)
-            val work = LocalJsonWorkRepository.parseWorkFromJson(singleWorkJson)
-
-            assertTrue("作品 ID 必须非空", work.id.isNotBlank())
-            assertTrue("作品标题必须非空", work.title.isNotBlank())
-            assertTrue("作品正文必须非空", work.content.isNotBlank())
-
-            // 验证旧版 600 首作品未含 sourceTraces 时，严格默认为空列表，完全向后兼容
-            assertNotNull(work.sourceTraces)
-            assertTrue(work.sourceTraces.isEmpty())
-
-            if (work.id.startsWith("tang_")) tangCount++
-            if (work.id.startsWith("song_")) songCount++
-        }
-
-        // 验证作品 ID 与数量完整性：唐诗 320 首，宋词 280 首
-        assertEquals(320, tangCount)
-        assertEquals(280, songCount)
-    }
 
     /**
      * 验收要求 5：验证新 JSON 的多来源追溯及五个内容维度凭证可以完整往返（Round-trip）

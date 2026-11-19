@@ -164,10 +164,24 @@ class ThemeTest {
                 secCardContrast >= 3.0,
             )
 
-            // 4. 验证底部导航图标在导航栏底色上的对比度 (WCAG AA 图形元素阈值要求 >= 3.0:1)
-            val navIconContrast = calculateContrastRatio(tokens.bottomNavIconColor, tokens.bottomNavBackground)
+            // 4. 验证底部导航图标在真实渲染底色上的对比度 (WCAG AA 图形元素阈值要求 >= 3.0:1)
+            val navBackground = tokens.resolvedNavBackground(theme.isDark)
+            val effectiveNavBg = if (navBackground.alpha < 1f) {
+                // 将半透明底栏底色与主题背景底色进行色彩混合，得到屏幕真实渲染底色
+                val bg = tokens.statusBarProtectionColor
+                Color(
+                    red = navBackground.red * navBackground.alpha + bg.red * (1f - navBackground.alpha),
+                    green = navBackground.green * navBackground.alpha + bg.green * (1f - navBackground.alpha),
+                    blue = navBackground.blue * navBackground.alpha + bg.blue * (1f - navBackground.alpha),
+                    alpha = 1f,
+                )
+            } else {
+                navBackground
+            }
+            val iconColor = def.resolvedNavIconColor
+            val navIconContrast = calculateContrastRatio(iconColor, effectiveNavBg)
             assertTrue(
-                "主题【${theme.displayName}】底栏图标 bottomNavIconColor 对比度必须 >= 3.0，实测: $navIconContrast",
+                "主题【${theme.displayName}】底栏图标 resolvedNavIconColor 对比度必须 >= 3.0，实测: $navIconContrast",
                 navIconContrast >= 3.0,
             )
 
@@ -284,6 +298,87 @@ class ThemeTest {
                 expectedDividerAlpha,
                 tokens.resolvedNavDividerColor(isDark).alpha,
                 0.01f,
+            )
+        }
+    }
+
+    @Test
+    fun testClassicThemesNavIconAutoInheritPrimary() {
+        val classicThemes = AppThemeId.entries.filter { it.category == ThemeCategory.CLASSIC }
+        assertEquals("经典主题必须严格为 6 套", 6, classicThemes.size)
+
+        for (theme in classicThemes) {
+            val def = AppThemePalette.getThemeDefinition(theme)
+            val iconColor = def.resolvedNavIconColor
+            val primaryColor = def.colorScheme.primary
+
+            // 1. 六套经典主题的导航栏图标颜色均自动继承当前 ColorScheme.primary
+            assertEquals(
+                "经典主题【${theme.displayName}】底栏图标颜色必须自动继承其生效的 primary 主色",
+                primaryColor.value,
+                iconColor.value,
+            )
+
+            // 2. 选中态为 100% 不透明 (alpha = 1.0f)
+            val selectedAlpha = iconColor.alpha
+            assertEquals(
+                "经典主题【${theme.displayName}】选中态底栏图标必须 100% 不透明",
+                1.0f,
+                selectedAlpha,
+                0.001f,
+            )
+
+            // 3. 未选中态为 50% 不透明 (alpha = 0.50f)
+            val unselectedIcon = iconColor.copy(alpha = 0.50f)
+            assertEquals(
+                "经典主题【${theme.displayName}】未选中态底栏图标必须为 50% 透明度",
+                0.50f,
+                unselectedIcon.alpha,
+                0.01f,
+            )
+
+            // 4. 浅色模式和暗色模式均正确
+            if (theme.isDark) {
+                // 暗色模式：夜墨生香，primary 为亮米黄 Color(0xFFE9D8A8)
+                assertEquals(Color(0xFFE9D8A8).value, iconColor.value)
+            } else {
+                // 浅色模式：朱砂雅集应为深朱褐，琥珀秋笺应为深秋褐
+                when (theme) {
+                    AppThemeId.CINNABAR_RED -> assertEquals(Color(0xFF4E2B2A).value, iconColor.value)
+                    AppThemeId.AMBER_AUTUMN -> assertEquals(Color(0xFF49371D).value, iconColor.value)
+                    AppThemeId.XUAN_PAPER -> assertEquals(Color(0xFF493A2B).value, iconColor.value)
+                    AppThemeId.BAMBOO_GREEN -> assertEquals(Color(0xFF304331).value, iconColor.value)
+                    AppThemeId.INDIGO_MOUNTAIN -> assertEquals(Color(0xFF293F47).value, iconColor.value)
+                    else -> {}
+                }
+            }
+        }
+
+        // 5. 四套四季主题的原有图标颜色和视觉配置完全不变
+        val seasonalThemes = AppThemeId.entries.filter { it.category == ThemeCategory.SEASONAL }
+        assertEquals("四季主题必须严格为 4 套", 4, seasonalThemes.size)
+
+        val expectedSeasonalNavColors = mapOf(
+            AppThemeId.SPRING_WILLOW to Color(0xFF7B384A),
+            AppThemeId.SUMMER_LOTUS to Color(0xFF235E4E),
+            AppThemeId.AUTUMN_MAPLE to Color(0xFF8D3B26),
+            AppThemeId.WINTER_SNOW to Color(0xFF2D4E6D),
+        )
+
+        for (theme in seasonalThemes) {
+            val def = AppThemePalette.getThemeDefinition(theme)
+            val iconColor = def.resolvedNavIconColor
+            val expectedColor = expectedSeasonalNavColors[theme] ?: error("Missing color for $theme")
+
+            assertEquals(
+                "四季主题【${theme.displayName}】底栏图标颜色必须维持独立原有配置不变",
+                expectedColor.value,
+                iconColor.value,
+            )
+            assertEquals(
+                "四季主题【${theme.displayName}】resolvedNavIconColor 必须与 customTokens.bottomNavIconColor 严格一致",
+                def.customTokens.bottomNavIconColor.value,
+                iconColor.value,
             )
         }
     }

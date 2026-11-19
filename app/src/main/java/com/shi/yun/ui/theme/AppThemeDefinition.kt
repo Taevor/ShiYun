@@ -170,7 +170,19 @@ data class AppThemeDefinition(
     val themeId: AppThemeId,
     val colorScheme: ColorScheme,
     val customTokens: AppThemeCustomTokens,
-)
+) {
+    /**
+     * 底部导航栏生效图标颜色：
+     * - 经典主题（ThemeCategory.CLASSIC）：统一自动继承当前实际生效的 colorScheme.primary；
+     * - 四时主题（ThemeCategory.SEASONAL）：保持各四季主题专属独立的 customTokens.bottomNavIconColor。
+     */
+    val resolvedNavIconColor: Color
+        get() = if (themeId.category == ThemeCategory.CLASSIC) {
+            colorScheme.primary
+        } else {
+            customTokens.bottomNavIconColor
+        }
+}
 
 /**
  * 全局主题 CompositionLocal，供顶层和特殊视觉组件（如首页山水滤镜、反馈卡片）获取扩展属性
