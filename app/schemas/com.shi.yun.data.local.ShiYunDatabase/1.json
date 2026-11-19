@@ -1,0 +1,2689 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "1b9599dae1e2ce0e84221f69acda80aa",
+    "entities": [
+      {
+        "tableName": "works",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`work_id` TEXT NOT NULL, `standard_title` TEXT NOT NULL, `identity_status` TEXT NOT NULL, `sort_order` INTEGER NOT NULL, `created_at_epoch_ms` INTEGER NOT NULL, `updated_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`work_id`))",
+        "fields": [
+          {
+            "fieldPath": "workId",
+            "columnName": "work_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "standardTitle",
+            "columnName": "standard_title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "identityStatus",
+            "columnName": "identity_status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updated_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "work_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_works_title",
+            "unique": false,
+            "columnNames": [
+              "standard_title"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_works_title` ON `${TABLE_NAME}` (`standard_title`)"
+          },
+          {
+            "name": "idx_works_sort",
+            "unique": false,
+            "columnNames": [
+              "sort_order"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_works_sort` ON `${TABLE_NAME}` (`sort_order`)"
+          }
+        ]
+      },
+      {
+        "tableName": "work_versions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`work_version_id` TEXT NOT NULL, `work_id` TEXT NOT NULL, `version_code` INTEGER NOT NULL, `edition_name` TEXT NOT NULL, `subtitle` TEXT, `preface` TEXT, `layout_type` TEXT NOT NULL, `excerpt` TEXT, `created_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`work_version_id`), FOREIGN KEY(`work_id`) REFERENCES `works`(`work_id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "workVersionId",
+            "columnName": "work_version_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workId",
+            "columnName": "work_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "versionCode",
+            "columnName": "version_code",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "editionName",
+            "columnName": "edition_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subtitle",
+            "columnName": "subtitle",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "preface",
+            "columnName": "preface",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "layoutType",
+            "columnName": "layout_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excerpt",
+            "columnName": "excerpt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "work_version_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_wv_work_version",
+            "unique": true,
+            "columnNames": [
+              "work_id",
+              "version_code"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_wv_work_version` ON `${TABLE_NAME}` (`work_id`, `version_code`)"
+          },
+          {
+            "name": "idx_wv_work_id",
+            "unique": false,
+            "columnNames": [
+              "work_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_wv_work_id` ON `${TABLE_NAME}` (`work_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "works",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "work_id"
+            ],
+            "referencedColumns": [
+              "work_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "authors",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`author_id` TEXT NOT NULL, `standard_name` TEXT NOT NULL, `dynasty_id` TEXT, `birth_year_raw` TEXT, `birth_year_sort` INTEGER, `death_year_sort` INTEGER, `biography` TEXT, `biography_source` TEXT, `biography_source_link_id` TEXT, `biography_review_status` TEXT NOT NULL, `sort_order` INTEGER NOT NULL, PRIMARY KEY(`author_id`), FOREIGN KEY(`dynasty_id`) REFERENCES `dynasties`(`dynasty_id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`biography_source_link_id`) REFERENCES `external_source_links`(`link_id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "authorId",
+            "columnName": "author_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "standardName",
+            "columnName": "standard_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dynastyId",
+            "columnName": "dynasty_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "birthYearRaw",
+            "columnName": "birth_year_raw",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "birthYearSort",
+            "columnName": "birth_year_sort",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "deathYearSort",
+            "columnName": "death_year_sort",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "biography",
+            "columnName": "biography",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "biographySource",
+            "columnName": "biography_source",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "biographySourceLinkId",
+            "columnName": "biography_source_link_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "biographyReviewStatus",
+            "columnName": "biography_review_status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "author_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_authors_name",
+            "unique": false,
+            "columnNames": [
+              "standard_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_authors_name` ON `${TABLE_NAME}` (`standard_name`)"
+          },
+          {
+            "name": "idx_authors_dynasty",
+            "unique": false,
+            "columnNames": [
+              "dynasty_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_authors_dynasty` ON `${TABLE_NAME}` (`dynasty_id`)"
+          },
+          {
+            "name": "idx_authors_bio_source",
+            "unique": false,
+            "columnNames": [
+              "biography_source_link_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_authors_bio_source` ON `${TABLE_NAME}` (`biography_source_link_id`)"
+          },
+          {
+            "name": "idx_authors_byear",
+            "unique": false,
+            "columnNames": [
+              "birth_year_sort"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_authors_byear` ON `${TABLE_NAME}` (`birth_year_sort`)"
+          },
+          {
+            "name": "idx_authors_sort",
+            "unique": false,
+            "columnNames": [
+              "sort_order"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_authors_sort` ON `${TABLE_NAME}` (`sort_order`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "dynasties",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "dynasty_id"
+            ],
+            "referencedColumns": [
+              "dynasty_id"
+            ]
+          },
+          {
+            "table": "external_source_links",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "biography_source_link_id"
+            ],
+            "referencedColumns": [
+              "link_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "author_aliases",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`alias_id` TEXT NOT NULL, `author_id` TEXT NOT NULL, `alias_name` TEXT NOT NULL, `alias_type` TEXT NOT NULL, PRIMARY KEY(`alias_id`), FOREIGN KEY(`author_id`) REFERENCES `authors`(`author_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "aliasId",
+            "columnName": "alias_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorId",
+            "columnName": "author_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aliasName",
+            "columnName": "alias_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aliasType",
+            "columnName": "alias_type",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "alias_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_aa_author_id",
+            "unique": false,
+            "columnNames": [
+              "author_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_aa_author_id` ON `${TABLE_NAME}` (`author_id`)"
+          },
+          {
+            "name": "idx_aa_alias_name",
+            "unique": false,
+            "columnNames": [
+              "alias_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_aa_alias_name` ON `${TABLE_NAME}` (`alias_name`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "authors",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "author_id"
+            ],
+            "referencedColumns": [
+              "author_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "work_authors",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`work_version_id` TEXT NOT NULL, `author_id` TEXT NOT NULL, `author_role` TEXT NOT NULL, `author_order` INTEGER NOT NULL, `determination_status` TEXT NOT NULL, `evidence` TEXT, `review_status` TEXT NOT NULL, `review_note` TEXT, PRIMARY KEY(`work_version_id`, `author_id`), FOREIGN KEY(`work_version_id`) REFERENCES `work_versions`(`work_version_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`author_id`) REFERENCES `authors`(`author_id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "workVersionId",
+            "columnName": "work_version_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorId",
+            "columnName": "author_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorRole",
+            "columnName": "author_role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorOrder",
+            "columnName": "author_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "determinationStatus",
+            "columnName": "determination_status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "evidence",
+            "columnName": "evidence",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reviewStatus",
+            "columnName": "review_status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reviewNote",
+            "columnName": "review_note",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "work_version_id",
+            "author_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_wa_author_id",
+            "unique": false,
+            "columnNames": [
+              "author_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_wa_author_id` ON `${TABLE_NAME}` (`author_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "work_versions",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "work_version_id"
+            ],
+            "referencedColumns": [
+              "work_version_id"
+            ]
+          },
+          {
+            "table": "authors",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "author_id"
+            ],
+            "referencedColumns": [
+              "author_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "dynasties",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`dynasty_id` TEXT NOT NULL, `standard_name` TEXT NOT NULL, `start_year` INTEGER, `end_year` INTEGER, `sort_order` INTEGER NOT NULL, PRIMARY KEY(`dynasty_id`))",
+        "fields": [
+          {
+            "fieldPath": "dynastyId",
+            "columnName": "dynasty_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "standardName",
+            "columnName": "standard_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startYear",
+            "columnName": "start_year",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "endYear",
+            "columnName": "end_year",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "dynasty_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_dynasties_name",
+            "unique": true,
+            "columnNames": [
+              "standard_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_dynasties_name` ON `${TABLE_NAME}` (`standard_name`)"
+          },
+          {
+            "name": "idx_dynasties_sort",
+            "unique": false,
+            "columnNames": [
+              "sort_order"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_dynasties_sort` ON `${TABLE_NAME}` (`sort_order`)"
+          }
+        ]
+      },
+      {
+        "tableName": "genres",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`genre_id` TEXT NOT NULL, `standard_name` TEXT NOT NULL, `sort_order` INTEGER NOT NULL, PRIMARY KEY(`genre_id`))",
+        "fields": [
+          {
+            "fieldPath": "genreId",
+            "columnName": "genre_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "standardName",
+            "columnName": "standard_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "genre_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_genres_name",
+            "unique": true,
+            "columnNames": [
+              "standard_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_genres_name` ON `${TABLE_NAME}` (`standard_name`)"
+          }
+        ]
+      },
+      {
+        "tableName": "forms",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`form_id` TEXT NOT NULL, `standard_name` TEXT NOT NULL, `genre_id` TEXT NOT NULL, `line_count` INTEGER, `char_per_line` INTEGER, `sort_order` INTEGER NOT NULL, PRIMARY KEY(`form_id`), FOREIGN KEY(`genre_id`) REFERENCES `genres`(`genre_id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "formId",
+            "columnName": "form_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "standardName",
+            "columnName": "standard_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "genreId",
+            "columnName": "genre_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lineCount",
+            "columnName": "line_count",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "charPerLine",
+            "columnName": "char_per_line",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "form_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_forms_genre",
+            "unique": false,
+            "columnNames": [
+              "genre_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_forms_genre` ON `${TABLE_NAME}` (`genre_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "genres",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "genre_id"
+            ],
+            "referencedColumns": [
+              "genre_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "cipais",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`cipai_id` TEXT NOT NULL, `standard_name` TEXT NOT NULL, `cipai_pattern_summary` TEXT, `sort_order` INTEGER NOT NULL, PRIMARY KEY(`cipai_id`))",
+        "fields": [
+          {
+            "fieldPath": "cipaiId",
+            "columnName": "cipai_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "standardName",
+            "columnName": "standard_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cipaiPatternSummary",
+            "columnName": "cipai_pattern_summary",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "cipai_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_cipais_name",
+            "unique": true,
+            "columnNames": [
+              "standard_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_cipais_name` ON `${TABLE_NAME}` (`standard_name`)"
+          }
+        ]
+      },
+      {
+        "tableName": "cipai_aliases",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`alias_id` TEXT NOT NULL, `cipai_id` TEXT NOT NULL, `alias_name` TEXT NOT NULL, PRIMARY KEY(`alias_id`), FOREIGN KEY(`cipai_id`) REFERENCES `cipais`(`cipai_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "aliasId",
+            "columnName": "alias_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cipaiId",
+            "columnName": "cipai_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aliasName",
+            "columnName": "alias_name",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "alias_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_ca_cipai_id",
+            "unique": false,
+            "columnNames": [
+              "cipai_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_ca_cipai_id` ON `${TABLE_NAME}` (`cipai_id`)"
+          },
+          {
+            "name": "idx_ca_alias_name",
+            "unique": false,
+            "columnNames": [
+              "alias_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_ca_alias_name` ON `${TABLE_NAME}` (`alias_name`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "cipais",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "cipai_id"
+            ],
+            "referencedColumns": [
+              "cipai_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "qupais",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`qupai_id` TEXT NOT NULL, `standard_name` TEXT NOT NULL, `qupai_category` TEXT NOT NULL, `sort_order` INTEGER NOT NULL, PRIMARY KEY(`qupai_id`))",
+        "fields": [
+          {
+            "fieldPath": "qupaiId",
+            "columnName": "qupai_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "standardName",
+            "columnName": "standard_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "qupaiCategory",
+            "columnName": "qupai_category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "qupai_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_qupais_name",
+            "unique": true,
+            "columnNames": [
+              "standard_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_qupais_name` ON `${TABLE_NAME}` (`standard_name`)"
+          }
+        ]
+      },
+      {
+        "tableName": "qupai_aliases",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`alias_id` TEXT NOT NULL, `qupai_id` TEXT NOT NULL, `alias_name` TEXT NOT NULL, PRIMARY KEY(`alias_id`), FOREIGN KEY(`qupai_id`) REFERENCES `qupais`(`qupai_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "aliasId",
+            "columnName": "alias_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "qupaiId",
+            "columnName": "qupai_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aliasName",
+            "columnName": "alias_name",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "alias_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_qa_qupai_id",
+            "unique": false,
+            "columnNames": [
+              "qupai_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_qa_qupai_id` ON `${TABLE_NAME}` (`qupai_id`)"
+          },
+          {
+            "name": "idx_qa_alias_name",
+            "unique": false,
+            "columnNames": [
+              "alias_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_qa_alias_name` ON `${TABLE_NAME}` (`alias_name`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "qupais",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "qupai_id"
+            ],
+            "referencedColumns": [
+              "qupai_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "tags",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`tag_id` TEXT NOT NULL, `standard_name` TEXT NOT NULL, `tag_category` TEXT NOT NULL, `sort_order` INTEGER NOT NULL, PRIMARY KEY(`tag_id`))",
+        "fields": [
+          {
+            "fieldPath": "tagId",
+            "columnName": "tag_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "standardName",
+            "columnName": "standard_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tagCategory",
+            "columnName": "tag_category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "tag_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_tags_name",
+            "unique": true,
+            "columnNames": [
+              "standard_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_tags_name` ON `${TABLE_NAME}` (`standard_name`)"
+          }
+        ]
+      },
+      {
+        "tableName": "tag_aliases",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`alias_id` TEXT NOT NULL, `tag_id` TEXT NOT NULL, `alias_name` TEXT NOT NULL, PRIMARY KEY(`alias_id`), FOREIGN KEY(`tag_id`) REFERENCES `tags`(`tag_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "aliasId",
+            "columnName": "alias_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tagId",
+            "columnName": "tag_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aliasName",
+            "columnName": "alias_name",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "alias_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_ta_tag_id",
+            "unique": false,
+            "columnNames": [
+              "tag_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_ta_tag_id` ON `${TABLE_NAME}` (`tag_id`)"
+          },
+          {
+            "name": "idx_ta_alias_name",
+            "unique": false,
+            "columnNames": [
+              "alias_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_ta_alias_name` ON `${TABLE_NAME}` (`alias_name`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "tags",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "tag_id"
+            ],
+            "referencedColumns": [
+              "tag_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "content_components",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`component_id` TEXT NOT NULL, `component_type` TEXT NOT NULL, `content_payload` TEXT NOT NULL, `raw_format` TEXT NOT NULL, `origin_type` TEXT NOT NULL, `content_hash` TEXT NOT NULL, `created_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`component_id`))",
+        "fields": [
+          {
+            "fieldPath": "componentId",
+            "columnName": "component_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "componentType",
+            "columnName": "component_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contentPayload",
+            "columnName": "content_payload",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rawFormat",
+            "columnName": "raw_format",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originType",
+            "columnName": "origin_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contentHash",
+            "columnName": "content_hash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "component_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_cc_id_type",
+            "unique": true,
+            "columnNames": [
+              "component_id",
+              "component_type"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_cc_id_type` ON `${TABLE_NAME}` (`component_id`, `component_type`)"
+          },
+          {
+            "name": "idx_cc_type",
+            "unique": false,
+            "columnNames": [
+              "component_type"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_cc_type` ON `${TABLE_NAME}` (`component_type`)"
+          },
+          {
+            "name": "idx_cc_hash",
+            "unique": false,
+            "columnNames": [
+              "content_hash"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_cc_hash` ON `${TABLE_NAME}` (`content_hash`)"
+          }
+        ]
+      },
+      {
+        "tableName": "work_version_contents",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`work_version_id` TEXT NOT NULL, `component_type` TEXT NOT NULL, `component_id` TEXT NOT NULL, `review_status` TEXT NOT NULL, `review_note` TEXT, `reviewed_at_epoch_ms` INTEGER, PRIMARY KEY(`work_version_id`, `component_type`), FOREIGN KEY(`work_version_id`) REFERENCES `work_versions`(`work_version_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`component_id`, `component_type`) REFERENCES `content_components`(`component_id`, `component_type`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "workVersionId",
+            "columnName": "work_version_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "componentType",
+            "columnName": "component_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "componentId",
+            "columnName": "component_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reviewStatus",
+            "columnName": "review_status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reviewNote",
+            "columnName": "review_note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reviewedAtEpochMs",
+            "columnName": "reviewed_at_epoch_ms",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "work_version_id",
+            "component_type"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_wvc_cid_type",
+            "unique": false,
+            "columnNames": [
+              "component_id",
+              "component_type"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_wvc_cid_type` ON `${TABLE_NAME}` (`component_id`, `component_type`)"
+          },
+          {
+            "name": "idx_wvc_rev",
+            "unique": false,
+            "columnNames": [
+              "review_status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_wvc_rev` ON `${TABLE_NAME}` (`review_status`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "work_versions",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "work_version_id"
+            ],
+            "referencedColumns": [
+              "work_version_id"
+            ]
+          },
+          {
+            "table": "content_components",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "component_id",
+              "component_type"
+            ],
+            "referencedColumns": [
+              "component_id",
+              "component_type"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "work_version_classifications",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`work_version_id` TEXT NOT NULL, `dimension_type` TEXT NOT NULL, `classification_id` TEXT, `determination_status` TEXT NOT NULL, `evidence` TEXT, `review_status` TEXT NOT NULL, `review_note` TEXT, `updated_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`work_version_id`, `dimension_type`), FOREIGN KEY(`work_version_id`) REFERENCES `work_versions`(`work_version_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "workVersionId",
+            "columnName": "work_version_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dimensionType",
+            "columnName": "dimension_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "classificationId",
+            "columnName": "classification_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "determinationStatus",
+            "columnName": "determination_status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "evidence",
+            "columnName": "evidence",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reviewStatus",
+            "columnName": "review_status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reviewNote",
+            "columnName": "review_note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updated_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "work_version_id",
+            "dimension_type"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_wcls_cid",
+            "unique": false,
+            "columnNames": [
+              "classification_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_wcls_cid` ON `${TABLE_NAME}` (`classification_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "work_versions",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "work_version_id"
+            ],
+            "referencedColumns": [
+              "work_version_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "work_version_tags",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`work_version_id` TEXT NOT NULL, `tag_id` TEXT NOT NULL, `review_status` TEXT NOT NULL, `review_note` TEXT, PRIMARY KEY(`work_version_id`, `tag_id`), FOREIGN KEY(`work_version_id`) REFERENCES `work_versions`(`work_version_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`tag_id`) REFERENCES `tags`(`tag_id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "workVersionId",
+            "columnName": "work_version_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tagId",
+            "columnName": "tag_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reviewStatus",
+            "columnName": "review_status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reviewNote",
+            "columnName": "review_note",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "work_version_id",
+            "tag_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_wvt_tagid",
+            "unique": false,
+            "columnNames": [
+              "tag_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_wvt_tagid` ON `${TABLE_NAME}` (`tag_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "work_versions",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "work_version_id"
+            ],
+            "referencedColumns": [
+              "work_version_id"
+            ]
+          },
+          {
+            "table": "tags",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "tag_id"
+            ],
+            "referencedColumns": [
+              "tag_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "external_source_links",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`link_id` TEXT NOT NULL, `source_code` TEXT NOT NULL, `external_item_id` TEXT NOT NULL, `item_url` TEXT, `license_desc` TEXT, PRIMARY KEY(`link_id`))",
+        "fields": [
+          {
+            "fieldPath": "linkId",
+            "columnName": "link_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceCode",
+            "columnName": "source_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "externalItemId",
+            "columnName": "external_item_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "itemUrl",
+            "columnName": "item_url",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "licenseDesc",
+            "columnName": "license_desc",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "link_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_esl_source_item",
+            "unique": true,
+            "columnNames": [
+              "source_code",
+              "external_item_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_esl_source_item` ON `${TABLE_NAME}` (`source_code`, `external_item_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "work_source_links",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`link_id` TEXT NOT NULL, `work_id` TEXT NOT NULL, `external_source_link_id` TEXT NOT NULL, `is_primary` INTEGER NOT NULL, PRIMARY KEY(`link_id`), FOREIGN KEY(`work_id`) REFERENCES `works`(`work_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`external_source_link_id`) REFERENCES `external_source_links`(`link_id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "linkId",
+            "columnName": "link_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workId",
+            "columnName": "work_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "externalSourceLinkId",
+            "columnName": "external_source_link_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isPrimary",
+            "columnName": "is_primary",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "link_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_wsl_wid_eslid",
+            "unique": true,
+            "columnNames": [
+              "work_id",
+              "external_source_link_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_wsl_wid_eslid` ON `${TABLE_NAME}` (`work_id`, `external_source_link_id`)"
+          },
+          {
+            "name": "idx_wsl_eslid",
+            "unique": false,
+            "columnNames": [
+              "external_source_link_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_wsl_eslid` ON `${TABLE_NAME}` (`external_source_link_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "works",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "work_id"
+            ],
+            "referencedColumns": [
+              "work_id"
+            ]
+          },
+          {
+            "table": "external_source_links",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "external_source_link_id"
+            ],
+            "referencedColumns": [
+              "link_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "content_attributions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`attribution_id` TEXT NOT NULL, `component_id` TEXT NOT NULL, `external_source_link_id` TEXT, `curator_name` TEXT, `license_type` TEXT NOT NULL, `license_note` TEXT, PRIMARY KEY(`attribution_id`), FOREIGN KEY(`component_id`) REFERENCES `content_components`(`component_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`external_source_link_id`) REFERENCES `external_source_links`(`link_id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "attributionId",
+            "columnName": "attribution_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "componentId",
+            "columnName": "component_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "externalSourceLinkId",
+            "columnName": "external_source_link_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "curatorName",
+            "columnName": "curator_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "licenseType",
+            "columnName": "license_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "licenseNote",
+            "columnName": "license_note",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "attribution_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_ca_cid",
+            "unique": false,
+            "columnNames": [
+              "component_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_ca_cid` ON `${TABLE_NAME}` (`component_id`)"
+          },
+          {
+            "name": "idx_ca_eslid",
+            "unique": false,
+            "columnNames": [
+              "external_source_link_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_ca_eslid` ON `${TABLE_NAME}` (`external_source_link_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "content_components",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "component_id"
+            ],
+            "referencedColumns": [
+              "component_id"
+            ]
+          },
+          {
+            "table": "external_source_links",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "external_source_link_id"
+            ],
+            "referencedColumns": [
+              "link_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "data_batches",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`batch_id` TEXT NOT NULL, `batch_code` TEXT NOT NULL, `batch_source` TEXT NOT NULL, `item_count` INTEGER NOT NULL, `status` TEXT NOT NULL, `created_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`batch_id`))",
+        "fields": [
+          {
+            "fieldPath": "batchId",
+            "columnName": "batch_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batchCode",
+            "columnName": "batch_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batchSource",
+            "columnName": "batch_source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "itemCount",
+            "columnName": "item_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "batch_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_batches_code",
+            "unique": true,
+            "columnNames": [
+              "batch_code"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_batches_code` ON `${TABLE_NAME}` (`batch_code`)"
+          }
+        ]
+      },
+      {
+        "tableName": "data_releases",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`release_id` TEXT NOT NULL, `release_code` TEXT NOT NULL, `batch_id` TEXT NOT NULL, `release_type` TEXT NOT NULL, `description` TEXT, `published_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`release_id`), FOREIGN KEY(`batch_id`) REFERENCES `data_batches`(`batch_id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "releaseId",
+            "columnName": "release_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "releaseCode",
+            "columnName": "release_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batchId",
+            "columnName": "batch_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "releaseType",
+            "columnName": "release_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "publishedAtEpochMs",
+            "columnName": "published_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "release_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_releases_code",
+            "unique": true,
+            "columnNames": [
+              "release_code"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_releases_code` ON `${TABLE_NAME}` (`release_code`)"
+          },
+          {
+            "name": "idx_releases_batch",
+            "unique": false,
+            "columnNames": [
+              "batch_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_releases_batch` ON `${TABLE_NAME}` (`batch_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "data_batches",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "batch_id"
+            ],
+            "referencedColumns": [
+              "batch_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "release_work_entries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`release_id` TEXT NOT NULL, `work_id` TEXT NOT NULL, `work_version_id` TEXT NOT NULL, PRIMARY KEY(`release_id`, `work_id`), FOREIGN KEY(`release_id`) REFERENCES `data_releases`(`release_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`work_id`) REFERENCES `works`(`work_id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`work_version_id`) REFERENCES `work_versions`(`work_version_id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "releaseId",
+            "columnName": "release_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workId",
+            "columnName": "work_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workVersionId",
+            "columnName": "work_version_id",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "release_id",
+            "work_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_rwe_wid",
+            "unique": false,
+            "columnNames": [
+              "work_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_rwe_wid` ON `${TABLE_NAME}` (`work_id`)"
+          },
+          {
+            "name": "idx_rwe_wvid",
+            "unique": false,
+            "columnNames": [
+              "work_version_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_rwe_wvid` ON `${TABLE_NAME}` (`work_version_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "data_releases",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "release_id"
+            ],
+            "referencedColumns": [
+              "release_id"
+            ]
+          },
+          {
+            "table": "works",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "work_id"
+            ],
+            "referencedColumns": [
+              "work_id"
+            ]
+          },
+          {
+            "table": "work_versions",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "work_version_id"
+            ],
+            "referencedColumns": [
+              "work_version_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "anthology_books",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`book_id` TEXT NOT NULL, `standard_title` TEXT NOT NULL, `book_code` TEXT NOT NULL, `compiler` TEXT, `total_volumes` INTEGER NOT NULL, `description` TEXT, PRIMARY KEY(`book_id`))",
+        "fields": [
+          {
+            "fieldPath": "bookId",
+            "columnName": "book_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "standardTitle",
+            "columnName": "standard_title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bookCode",
+            "columnName": "book_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "compiler",
+            "columnName": "compiler",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "totalVolumes",
+            "columnName": "total_volumes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "book_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_ab_code",
+            "unique": true,
+            "columnNames": [
+              "book_code"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_ab_code` ON `${TABLE_NAME}` (`book_code`)"
+          }
+        ]
+      },
+      {
+        "tableName": "anthology_book_versions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`book_version_id` TEXT NOT NULL, `book_id` TEXT NOT NULL, `version_code` INTEGER NOT NULL, `edition_note` TEXT, `release_id` TEXT NOT NULL, PRIMARY KEY(`book_version_id`), FOREIGN KEY(`book_id`) REFERENCES `anthology_books`(`book_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`release_id`) REFERENCES `data_releases`(`release_id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "bookVersionId",
+            "columnName": "book_version_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bookId",
+            "columnName": "book_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "versionCode",
+            "columnName": "version_code",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "editionNote",
+            "columnName": "edition_note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "releaseId",
+            "columnName": "release_id",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "book_version_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_abv_book_version",
+            "unique": true,
+            "columnNames": [
+              "book_id",
+              "version_code"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_abv_book_version` ON `${TABLE_NAME}` (`book_id`, `version_code`)"
+          },
+          {
+            "name": "idx_abv_release_id",
+            "unique": false,
+            "columnNames": [
+              "release_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_abv_release_id` ON `${TABLE_NAME}` (`release_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "anthology_books",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "book_id"
+            ],
+            "referencedColumns": [
+              "book_id"
+            ]
+          },
+          {
+            "table": "data_releases",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "release_id"
+            ],
+            "referencedColumns": [
+              "release_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "anthology_nodes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`node_id` TEXT NOT NULL, `book_version_id` TEXT NOT NULL, `parent_node_id` TEXT, `node_title` TEXT NOT NULL, `node_type` TEXT NOT NULL, `sort_order` INTEGER NOT NULL, PRIMARY KEY(`node_id`), FOREIGN KEY(`book_version_id`) REFERENCES `anthology_book_versions`(`book_version_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`parent_node_id`) REFERENCES `anthology_nodes`(`node_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "nodeId",
+            "columnName": "node_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bookVersionId",
+            "columnName": "book_version_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parentNodeId",
+            "columnName": "parent_node_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nodeTitle",
+            "columnName": "node_title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nodeType",
+            "columnName": "node_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "node_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_an_bvid",
+            "unique": false,
+            "columnNames": [
+              "book_version_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_an_bvid` ON `${TABLE_NAME}` (`book_version_id`)"
+          },
+          {
+            "name": "idx_an_parent",
+            "unique": false,
+            "columnNames": [
+              "parent_node_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_an_parent` ON `${TABLE_NAME}` (`parent_node_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "anthology_book_versions",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "book_version_id"
+            ],
+            "referencedColumns": [
+              "book_version_id"
+            ]
+          },
+          {
+            "table": "anthology_nodes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "parent_node_id"
+            ],
+            "referencedColumns": [
+              "node_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "anthology_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`item_id` TEXT NOT NULL, `node_id` TEXT NOT NULL, `work_id` TEXT NOT NULL, `work_version_id` TEXT NOT NULL, `item_order` INTEGER NOT NULL, PRIMARY KEY(`item_id`), FOREIGN KEY(`node_id`) REFERENCES `anthology_nodes`(`node_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`work_id`) REFERENCES `works`(`work_id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`work_version_id`) REFERENCES `work_versions`(`work_version_id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "itemId",
+            "columnName": "item_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nodeId",
+            "columnName": "node_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workId",
+            "columnName": "work_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workVersionId",
+            "columnName": "work_version_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "itemOrder",
+            "columnName": "item_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "item_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_ai_node_work",
+            "unique": true,
+            "columnNames": [
+              "node_id",
+              "work_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_ai_node_work` ON `${TABLE_NAME}` (`node_id`, `work_id`)"
+          },
+          {
+            "name": "idx_ai_work",
+            "unique": false,
+            "columnNames": [
+              "work_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_ai_work` ON `${TABLE_NAME}` (`work_id`)"
+          },
+          {
+            "name": "idx_ai_wvid",
+            "unique": false,
+            "columnNames": [
+              "work_version_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_ai_wvid` ON `${TABLE_NAME}` (`work_version_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "anthology_nodes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "node_id"
+            ],
+            "referencedColumns": [
+              "node_id"
+            ]
+          },
+          {
+            "table": "works",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "work_id"
+            ],
+            "referencedColumns": [
+              "work_id"
+            ]
+          },
+          {
+            "table": "work_versions",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "work_version_id"
+            ],
+            "referencedColumns": [
+              "work_version_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "app_release_pointer",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`pointer_id` INTEGER NOT NULL, `current_release_id` TEXT, `activated_at_epoch_ms` INTEGER NOT NULL, `updated_by` TEXT NOT NULL, PRIMARY KEY(`pointer_id`), FOREIGN KEY(`current_release_id`) REFERENCES `data_releases`(`release_id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "pointerId",
+            "columnName": "pointer_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentReleaseId",
+            "columnName": "current_release_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "activatedAtEpochMs",
+            "columnName": "activated_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedBy",
+            "columnName": "updated_by",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "pointer_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_arp_release_id",
+            "unique": false,
+            "columnNames": [
+              "current_release_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_arp_release_id` ON `${TABLE_NAME}` (`current_release_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "data_releases",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "current_release_id"
+            ],
+            "referencedColumns": [
+              "release_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "app_database_metadata",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`metadata_key` TEXT NOT NULL, `metadata_value` TEXT NOT NULL, `updated_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`metadata_key`))",
+        "fields": [
+          {
+            "fieldPath": "metadataKey",
+            "columnName": "metadata_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metadataValue",
+            "columnName": "metadata_value",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updated_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "metadata_key"
+          ]
+        }
+      },
+      {
+        "tableName": "cached_remote_works",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`remote_work_id` TEXT NOT NULL, `source_code` TEXT NOT NULL, `external_id` TEXT NOT NULL, `title` TEXT NOT NULL, `author_name` TEXT NOT NULL, `raw_payload` TEXT NOT NULL, `fetched_at_epoch_ms` INTEGER NOT NULL, `last_accessed_epoch_ms` INTEGER NOT NULL, `expire_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`remote_work_id`))",
+        "fields": [
+          {
+            "fieldPath": "remoteWorkId",
+            "columnName": "remote_work_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceCode",
+            "columnName": "source_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "externalId",
+            "columnName": "external_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorName",
+            "columnName": "author_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rawPayload",
+            "columnName": "raw_payload",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAtEpochMs",
+            "columnName": "fetched_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastAccessedEpochMs",
+            "columnName": "last_accessed_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expireAtEpochMs",
+            "columnName": "expire_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "remote_work_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_crw_src",
+            "unique": false,
+            "columnNames": [
+              "source_code"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_crw_src` ON `${TABLE_NAME}` (`source_code`)"
+          },
+          {
+            "name": "idx_crw_lru",
+            "unique": false,
+            "columnNames": [
+              "last_accessed_epoch_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_crw_lru` ON `${TABLE_NAME}` (`last_accessed_epoch_ms`)"
+          },
+          {
+            "name": "idx_crw_exp",
+            "unique": false,
+            "columnNames": [
+              "expire_at_epoch_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_crw_exp` ON `${TABLE_NAME}` (`expire_at_epoch_ms`)"
+          }
+        ]
+      },
+      {
+        "tableName": "user_favorites",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`favorite_id` TEXT NOT NULL, `work_id` TEXT NOT NULL, `created_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`favorite_id`), FOREIGN KEY(`work_id`) REFERENCES `works`(`work_id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "favoriteId",
+            "columnName": "favorite_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workId",
+            "columnName": "work_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "favorite_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_fav_wid",
+            "unique": true,
+            "columnNames": [
+              "work_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_fav_wid` ON `${TABLE_NAME}` (`work_id`)"
+          },
+          {
+            "name": "idx_fav_time",
+            "unique": false,
+            "columnNames": [
+              "created_at_epoch_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_fav_time` ON `${TABLE_NAME}` (`created_at_epoch_ms`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "works",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "work_id"
+            ],
+            "referencedColumns": [
+              "work_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "user_anthologies",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`user_anthology_id` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `cover_theme_id` TEXT, `created_at_epoch_ms` INTEGER NOT NULL, `updated_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`user_anthology_id`))",
+        "fields": [
+          {
+            "fieldPath": "userAnthologyId",
+            "columnName": "user_anthology_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "coverThemeId",
+            "columnName": "cover_theme_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updated_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "user_anthology_id"
+          ]
+        }
+      },
+      {
+        "tableName": "user_anthology_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`item_id` TEXT NOT NULL, `user_anthology_id` TEXT NOT NULL, `work_id` TEXT NOT NULL, `item_order` INTEGER NOT NULL, `added_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`item_id`), FOREIGN KEY(`user_anthology_id`) REFERENCES `user_anthologies`(`user_anthology_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`work_id`) REFERENCES `works`(`work_id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "itemId",
+            "columnName": "item_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userAnthologyId",
+            "columnName": "user_anthology_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workId",
+            "columnName": "work_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "itemOrder",
+            "columnName": "item_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addedAtEpochMs",
+            "columnName": "added_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "item_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_uai_uaid_wid",
+            "unique": true,
+            "columnNames": [
+              "user_anthology_id",
+              "work_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_uai_uaid_wid` ON `${TABLE_NAME}` (`user_anthology_id`, `work_id`)"
+          },
+          {
+            "name": "idx_uai_wid",
+            "unique": false,
+            "columnNames": [
+              "work_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_uai_wid` ON `${TABLE_NAME}` (`work_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "user_anthologies",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "user_anthology_id"
+            ],
+            "referencedColumns": [
+              "user_anthology_id"
+            ]
+          },
+          {
+            "table": "works",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "work_id"
+            ],
+            "referencedColumns": [
+              "work_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "user_notes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`note_id` TEXT NOT NULL, `work_id` TEXT NOT NULL, `work_version_id` TEXT, `anchor_quote` TEXT, `anchor_start_index` INTEGER, `anchor_end_index` INTEGER, `note_content` TEXT NOT NULL, `created_at_epoch_ms` INTEGER NOT NULL, `updated_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`note_id`), FOREIGN KEY(`work_id`) REFERENCES `works`(`work_id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`work_version_id`) REFERENCES `work_versions`(`work_version_id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "noteId",
+            "columnName": "note_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workId",
+            "columnName": "work_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workVersionId",
+            "columnName": "work_version_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "anchorQuote",
+            "columnName": "anchor_quote",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "anchorStartIndex",
+            "columnName": "anchor_start_index",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "anchorEndIndex",
+            "columnName": "anchor_end_index",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "noteContent",
+            "columnName": "note_content",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updated_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "note_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_un_wid",
+            "unique": false,
+            "columnNames": [
+              "work_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_un_wid` ON `${TABLE_NAME}` (`work_id`)"
+          },
+          {
+            "name": "idx_un_wvid",
+            "unique": false,
+            "columnNames": [
+              "work_version_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_un_wvid` ON `${TABLE_NAME}` (`work_version_id`)"
+          },
+          {
+            "name": "idx_un_time",
+            "unique": false,
+            "columnNames": [
+              "created_at_epoch_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_un_time` ON `${TABLE_NAME}` (`created_at_epoch_ms`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "works",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "work_id"
+            ],
+            "referencedColumns": [
+              "work_id"
+            ]
+          },
+          {
+            "table": "work_versions",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "work_version_id"
+            ],
+            "referencedColumns": [
+              "work_version_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "identity_merges",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`merge_id` TEXT NOT NULL, `old_work_id` TEXT NOT NULL, `target_work_id` TEXT NOT NULL, `reason` TEXT NOT NULL, `operator` TEXT NOT NULL, `merged_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`merge_id`), FOREIGN KEY(`old_work_id`) REFERENCES `works`(`work_id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`target_work_id`) REFERENCES `works`(`work_id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "mergeId",
+            "columnName": "merge_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "oldWorkId",
+            "columnName": "old_work_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetWorkId",
+            "columnName": "target_work_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reason",
+            "columnName": "reason",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "operator",
+            "columnName": "operator",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mergedAtEpochMs",
+            "columnName": "merged_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "merge_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_im_old",
+            "unique": true,
+            "columnNames": [
+              "old_work_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_im_old` ON `${TABLE_NAME}` (`old_work_id`)"
+          },
+          {
+            "name": "idx_im_target",
+            "unique": false,
+            "columnNames": [
+              "target_work_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_im_target` ON `${TABLE_NAME}` (`target_work_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "works",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "old_work_id"
+            ],
+            "referencedColumns": [
+              "work_id"
+            ]
+          },
+          {
+            "table": "works",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "target_work_id"
+            ],
+            "referencedColumns": [
+              "work_id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1b9599dae1e2ce0e84221f69acda80aa')"
+    ]
+  }
+}

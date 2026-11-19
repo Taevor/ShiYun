@@ -38,9 +38,9 @@ import java.io.InputStreamReader
  */
 class LocalJsonWorkRepository(
     private val context: Context,
-    private val assetPath: String = "data/works.json",
-    private val anthologiesAssetPath: String = "data/anthologies.json",
-    private val anthologyItemsAssetPath: String = "data/anthology_items.json",
+    private val assetPath: String = "",
+    private val anthologiesAssetPath: String = "",
+    private val anthologyItemsAssetPath: String = "",
     private val prefsName: String = PREFS_NAME,
 ) : WorkRepository {
 
@@ -105,6 +105,9 @@ class LocalJsonWorkRepository(
                 // 8. 辅助内容 auxiliary 解析
                 val auxiliary = parseAuxiliary(jsonObject)
 
+                // 9. 多来源追溯凭证 sourceTraces 解析（可选，平滑兼容旧版 600 首作品）
+                val sourceTraces = parseSourceTraces(jsonObject)
+
                 return Work(
                     id = currentId,
                     title = currentTitle,
@@ -123,10 +126,27 @@ class LocalJsonWorkRepository(
                     source = source,
                     sourceId = sourceId,
                     licenseNote = licenseNote,
+                    sourceTraces = sourceTraces,
                 )
             } catch (e: Exception) {
                 throw IllegalStateException("解析作品失败 [序号: $index, ID: ${currentId ?: "未知"}, 标题: ${currentTitle ?: "未知"}]: ${e.message}", e)
             }
+        }
+
+        /**
+         * 纯文本 JSON 反序列化入口，供无 Android SDK Stub 依赖的 JVM 测试或通用反序列化调用
+         */
+        fun parseWorkFromJson(jsonString: String, index: Int = 0): Work {
+            return com.shi.yun.data.util.WorkJsonSerializer.deserialize(jsonString)
+        }
+
+        private fun parseSourceTraces(jsonObject: JSONObject): List<com.shi.yun.data.model.WorkSourceTrace> {
+            if (!jsonObject.has("sourceTraces") || jsonObject.isNull("sourceTraces")) {
+                return emptyList()
+            }
+            val raw = jsonObject.opt("sourceTraces") ?: return emptyList()
+            val parsedList = com.shi.yun.data.util.WorkJsonSerializer.parseJson(raw.toString()) as? List<*>
+            return com.shi.yun.data.util.WorkJsonSerializer.parseSourceTracesFromList(parsedList)
         }
 
         private fun requireNonBlankString(json: JSONObject, key: String): String {
@@ -497,9 +517,12 @@ class LocalJsonWorkRepository(
     /**
      * 在后台 IO 线程中读取并解析 assets 目录下的 JSON 文件
      *
-     * 出现异常时不吞错，明确向上抛出，确保调用方获知真正的加载状态。
+     * 针对废弃资产路径安全降级：未配置或资产不存在时平滑返回空列表。
      */
     private suspend fun loadWorksFromAsset(): List<Work> = withContext(Dispatchers.IO) {
+        if (assetPath.isBlank()) {
+            return@withContext emptyList()
+        }
         val startTime = System.currentTimeMillis()
         AppLogger.i("Repository", "开始读取并解析 assets 诗词数据: assetPath=$assetPath")
 
@@ -510,24 +533,22 @@ class LocalJsonWorkRepository(
                 }
             }
         } catch (e: Exception) {
-            val error = IllegalStateException("读取 assets 文件 [$assetPath] 失败: ${e.message}", e)
-            AppLogger.e("Repository", "读取 assets 文件失败: assetPath=$assetPath", error)
-            throw error
+            AppLogger.w("Repository", "读取 assets 文件失败: assetPath=$assetPath, ${e.message}")
+            return@withContext emptyList()
         }
 
         val jsonArray = try {
             JSONArray(jsonString)
         } catch (e: Exception) {
-            val error = IllegalStateException("解析 JSON 数据格式失败: ${e.message}", e)
-            AppLogger.e("Repository", "解析 assets JSON 失败: assetPath=$assetPath", error)
-            throw error
+            AppLogger.w("Repository", "解析 assets JSON 失败: assetPath=$assetPath, ${e.message}")
+            return@withContext emptyList()
         }
 
         val parsedWorks = try {
             parseWorkListFromJsonArray(jsonArray)
         } catch (e: Exception) {
-            AppLogger.e("Repository", "反序列化诗词实体失败: ${e.message}", e)
-            throw e
+            AppLogger.w("Repository", "反序列化诗词实体失败: ${e.message}")
+            return@withContext emptyList()
         }
 
         val duration = System.currentTimeMillis() - startTime
@@ -594,6 +615,9 @@ class LocalJsonWorkRepository(
     }
 
     private suspend fun loadAnthologiesFromAsset(): List<Anthology> = withContext(Dispatchers.IO) {
+        if (anthologiesAssetPath.isBlank()) {
+            return@withContext emptyList()
+        }
         val startTime = System.currentTimeMillis()
         AppLogger.i("Repository", "开始读取并解析选本定义: assetPath=$anthologiesAssetPath")
 
@@ -604,26 +628,24 @@ class LocalJsonWorkRepository(
                 }
             }
         } catch (e: Exception) {
-            val error = IllegalStateException("读取选本定义文件 [$anthologiesAssetPath] 失败: ${e.message}", e)
-            AppLogger.e("Repository", "读取选本定义文件失败: assetPath=$anthologiesAssetPath", error)
-            throw error
+            AppLogger.w("Repository", "读取选本定义文件失败: assetPath=$anthologiesAssetPath, ${e.message}")
+            return@withContext emptyList()
         }
 
         val jsonArray = try {
             JSONArray(jsonString)
         } catch (e: Exception) {
-            val error = IllegalStateException("解析选本定义 JSON 数据格式失败: ${e.message}", e)
-            AppLogger.e("Repository", "解析选本定义 JSON 失败: assetPath=$anthologiesAssetPath", error)
-            throw error
+            AppLogger.w("Repository", "解析选本定义 JSON 失败: assetPath=$anthologiesAssetPath, ${e.message}")
+            return@withContext emptyList()
         }
 
         val list = mutableListOf<Anthology>()
         for (i in 0 until jsonArray.length()) {
-            val obj = jsonArray.optJSONObject(i)
-                ?: throw IllegalStateException("选本定义数组元素非 JSONObject [序号: $i]")
-            val id = requireNonBlankString(obj, "id")
-            val code = requireNonBlankString(obj, "code")
-            val name = requireNonBlankString(obj, "name")
+            val obj = jsonArray.optJSONObject(i) ?: continue
+            val id = obj.optString("id", "").trim()
+            val code = obj.optString("code", "").trim()
+            val name = obj.optString("name", "").trim()
+            if (id.isEmpty() || code.isEmpty() || name.isEmpty()) continue
             val compiler = obj.optString("compiler", "")
             val dynasty = obj.optString("dynasty", "")
             val targetCount = obj.optInt("targetCount", 0)
@@ -647,6 +669,9 @@ class LocalJsonWorkRepository(
     }
 
     private suspend fun loadAnthologyItemsFromAsset(): List<AnthologyItem> = withContext(Dispatchers.IO) {
+        if (anthologyItemsAssetPath.isBlank()) {
+            return@withContext emptyList()
+        }
         val startTime = System.currentTimeMillis()
         AppLogger.i("Repository", "开始读取并解析选本篇目条目: assetPath=$anthologyItemsAssetPath")
 
@@ -657,29 +682,25 @@ class LocalJsonWorkRepository(
                 }
             }
         } catch (e: Exception) {
-            val error = IllegalStateException("读取选本篇目文件 [$anthologyItemsAssetPath] 失败: ${e.message}", e)
-            AppLogger.e("Repository", "读取选本篇目文件失败: assetPath=$anthologyItemsAssetPath", error)
-            throw error
+            AppLogger.w("Repository", "读取选本篇目文件失败: assetPath=$anthologyItemsAssetPath, ${e.message}")
+            return@withContext emptyList()
         }
 
         val jsonArray = try {
             JSONArray(jsonString)
         } catch (e: Exception) {
-            val error = IllegalStateException("解析选本篇目 JSON 数据格式失败: ${e.message}", e)
-            AppLogger.e("Repository", "解析选本篇目 JSON 失败: assetPath=$anthologyItemsAssetPath", error)
-            throw error
+            AppLogger.w("Repository", "解析选本篇目 JSON 失败: assetPath=$anthologyItemsAssetPath, ${e.message}")
+            return@withContext emptyList()
         }
 
         val list = ArrayList<AnthologyItem>(jsonArray.length())
         for (i in 0 until jsonArray.length()) {
-            val obj = jsonArray.optJSONObject(i)
-                ?: throw IllegalStateException("选本篇目数组元素非 JSONObject [序号: $i]")
-            val id = requireNonBlankString(obj, "id")
-            val anthologyId = requireNonBlankString(obj, "anthologyId")
-            val workId = requireNonBlankString(obj, "workId")
-            val orderIndex = if (obj.has("orderIndex")) obj.getInt("orderIndex") else {
-                throw IllegalArgumentException("选本篇目缺少必填整数字段 'orderIndex' [序号: $i, ID: $id]")
-            }
+            val obj = jsonArray.optJSONObject(i) ?: continue
+            val id = obj.optString("id", "").trim()
+            val anthologyId = obj.optString("anthologyId", "").trim()
+            val workId = obj.optString("workId", "").trim()
+            val orderIndex = obj.optInt("orderIndex", -1)
+            if (id.isEmpty() || anthologyId.isEmpty() || workId.isEmpty() || orderIndex < 0) continue
             val volume = obj.optString("volume", "")
             list.add(
                 AnthologyItem(

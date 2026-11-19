@@ -57,6 +57,7 @@ import com.shi.yun.data.model.Work
 import com.shi.yun.data.model.formatAuthorDynastyGenre
 import com.shi.yun.data.repository.WorkRepository
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.delay
 
 /**
  * 搜索界面 UI 状态定义
@@ -93,7 +94,7 @@ fun SearchScreen(
     val focusManager = LocalFocusManager.current
     var lastSearchedKeyword by rememberSaveable { mutableStateOf(keyword) }
 
-    // 搜索执行协程（基于关键词变动触发，支持协程安全取消）
+    // 搜索执行协程（基于关键词变动触发，内置 300ms 防抖，支持协程安全取消）
     LaunchedEffect(keyword) {
         val trimmed = keyword.trim()
 
@@ -104,13 +105,19 @@ fun SearchScreen(
             return@LaunchedEffect
         }
 
+        // 300ms 动态防抖延迟：连续输入时前序任务自动在此挂起处被协程作用域取消
+        delay(300)
+
         val isKeywordChanged = trimmed != lastSearchedKeyword.trim()
         lastSearchedKeyword = keyword
 
-        AppLogger.d("SearchScreen", "发起搜索: 关键词长度=${trimmed.length}, 内容实质变化=$isKeywordChanged")
+        AppLogger.d("SearchScreen", "防抖就绪，发起搜索: 关键词='$trimmed', 长度=${trimmed.length}, 内容实质变化=$isKeywordChanged")
         uiState = SearchUiState.Searching
+        val searchStart = System.currentTimeMillis()
         try {
             val results = repository.searchWorks(trimmed)
+            val duration = System.currentTimeMillis() - searchStart
+            AppLogger.i("SearchScreen", "搜索执行成功: 关键词='$trimmed', 结果数=${results.size}, 耗时=${duration}ms")
             uiState = if (results.isEmpty()) {
                 SearchUiState.Empty
             } else {
@@ -122,10 +129,12 @@ fun SearchScreen(
                 listState.scrollToItem(0)
             }
         } catch (e: CancellationException) {
+            AppLogger.d("SearchScreen", "搜索协程被新输入取消: 关键词='$trimmed'")
             // 协程正常取消，必须重新抛出，绝不当成异常提示
             throw e
         } catch (e: Exception) {
-            AppLogger.e("SearchScreen", "搜索执行发生异常: ${e.message}", e)
+            val duration = System.currentTimeMillis() - searchStart
+            AppLogger.e("SearchScreen", "搜索执行发生异常: 耗时=${duration}ms, 原因=${e.message}", e)
             uiState = SearchUiState.Error(e.message ?: "搜索遇到错误")
         }
     }
@@ -180,7 +189,10 @@ fun SearchScreen(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(CircleShape)
-                                .clickable { onKeywordChange("") },
+                                .clickable {
+                                    AppLogger.interaction("SearchScreen", "ClearKeywordButton", "Click", "SUCCESS", "清空搜索输入")
+                                    onKeywordChange("")
+                                },
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
@@ -193,7 +205,10 @@ fun SearchScreen(
                     }
                 },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                keyboardActions = KeyboardActions(onSearch = {
+                    AppLogger.interaction("SearchScreen", "ImeSearchAction", "Press", "SUCCESS", "收起键盘完成搜索")
+                    focusManager.clearFocus()
+                }),
             )
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -246,17 +261,17 @@ fun SearchScreen(
                 is SearchUiState.Empty -> {
                     val appTheme = com.shi.yun.ui.theme.LocalAppTheme.current
                     val isDark = appTheme.themeId.isDark
-                    val promptBg = appTheme.customTokens.cardBackground.copy(alpha = if (isDark) 0.60f else 0.42f)
-                    val promptBorder = appTheme.customTokens.cardBorder.copy(alpha = if (isDark) 0.40f else 0.25f)
+                    val promptBg = appTheme.customTokens.resolvedCardBackground(isDark)
+                    val promptBorder = appTheme.customTokens.resolvedCardBorder(isDark)
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier
                             .padding(top = 48.dp, start = 24.dp, end = 24.dp)
-                            .clip(RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(com.shi.yun.ui.theme.ThemeVisualSpecs.CORNER_RADIUS_HOME_CARD))
                             .background(promptBg)
-                            .border(0.5.dp, promptBorder, RoundedCornerShape(16.dp))
+                            .border(com.shi.yun.ui.theme.ThemeVisualSpecs.BORDER_WIDTH_CARD, promptBorder, RoundedCornerShape(com.shi.yun.ui.theme.ThemeVisualSpecs.CORNER_RADIUS_HOME_CARD))
                             .padding(horizontal = 24.dp, vertical = 20.dp),
                     ) {
                         Text(
@@ -304,7 +319,10 @@ fun SearchScreen(
                             SearchWorkItem(
                                 work = work,
                                 snippet = snippet,
-                                onClick = { onWorkClick(work, itemBounds) },
+                                onClick = {
+                                    AppLogger.interaction("SearchScreen", "SearchResultItem", "Click", "SUCCESS", "点击搜索结果: ${work.title} (${work.id})")
+                                    onWorkClick(work, itemBounds)
+                                },
                                 modifier = Modifier.onGloballyPositioned { coordinates ->
                                     itemBounds = coordinates.boundsInRoot()
                                 },
@@ -333,16 +351,16 @@ private fun SearchWorkItem(
 ) {
     val appTheme = com.shi.yun.ui.theme.LocalAppTheme.current
     val isDark = appTheme.themeId.isDark
-    val itemCardBg = appTheme.customTokens.cardBackground.copy(alpha = if (isDark) 0.60f else 0.42f)
-    val itemBorder = appTheme.customTokens.cardBorder.copy(alpha = if (isDark) 0.40f else 0.25f)
+    val itemCardBg = appTheme.customTokens.resolvedCardBackground(isDark)
+    val itemBorder = appTheme.customTokens.resolvedCardBorder(isDark)
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(com.shi.yun.ui.theme.ThemeVisualSpecs.CORNER_RADIUS_LIST_CARD))
             .background(itemCardBg)
-            .border(0.5.dp, itemBorder, RoundedCornerShape(12.dp))
+            .border(com.shi.yun.ui.theme.ThemeVisualSpecs.BORDER_WIDTH_CARD, itemBorder, RoundedCornerShape(com.shi.yun.ui.theme.ThemeVisualSpecs.CORNER_RADIUS_LIST_CARD))
             .clickable(onClick = onClick)
             .padding(horizontal = 18.dp, vertical = 14.dp),
     ) {

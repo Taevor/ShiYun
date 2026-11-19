@@ -2,5 +2,12 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/DownloadedProjects/PoetryCrawler" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/DownloadedProjects/chinese-gushiwen" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/DownloadedProjects/chinese-poetry" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/DownloadedProjects/chinese-poetry-md" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/DownloadedProjects/chinese-poetry-site" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/DownloadedProjects/haitang" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/DownloadedProjects/poems-db" vcs="Git" />
   </component>
 </project>

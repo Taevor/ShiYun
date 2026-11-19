@@ -86,7 +86,7 @@ class DetailScreenGestureInstrumentedTest {
     @Test
     fun testHomeBackgroundWebpExistsAndLoads() {
         val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
-        val drawable = androidx.core.content.ContextCompat.getDrawable(context, com.shi.yun.R.drawable.bg_home_landscape)
+        val drawable = androidx.core.content.ContextCompat.getDrawable(context, com.shi.yun.R.drawable.bg_paper_texture)
         assertNotNull(drawable)
     }
 

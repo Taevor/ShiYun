@@ -22,8 +22,8 @@ enum class ThemeCategory(val displayName: String) {
  * 6. 墨夜清辉 - 幽夜松烟，沉浸夜读（暗色）
  *
  * 四时主题 (4套)：
- * 7. 柳烟春晓 - 翠堤春晓，鹅黄嫩柳
- * 8. 荷风清韵 - 映日荷花，微风过池
+ * 7. 桃夭春晓 - 桃溪春晓，落英映水
+ * 8. 荷风清韵 - 映日荷花，微风出岫
  * 9. 枫笺染霜 - 霜叶晚林，秋色连波
  * 10. 寒江雪隐 - 孤舟钓雪，素练苍茫
  */
@@ -44,9 +44,9 @@ enum class AppThemeId(
         subtitle = "典雅米黄 · 温润护眼",
         category = ThemeCategory.CLASSIC,
         isDark = false,
-        primaryPreviewColor = Color(0xFF2B4452),
-        surfacePreviewColor = Color(0xFFF6F4EE),
-        accentPreviewColor = Color(0xFFB83A2A),
+        primaryPreviewColor = Color(0xFF493A2B),
+        surfacePreviewColor = Color(0xFFF6E9CF),
+        accentPreviewColor = Color(0xFFB89B68),
     ),
     BAMBOO_GREEN(
         id = "bamboo_green",
@@ -54,9 +54,9 @@ enum class AppThemeId(
         subtitle = "清风竹影 · 雅致静心",
         category = ThemeCategory.CLASSIC,
         isDark = false,
-        primaryPreviewColor = Color(0xFF3D634E),
-        surfacePreviewColor = Color(0xFFF2F5F3),
-        accentPreviewColor = Color(0xFFA25E35),
+        primaryPreviewColor = Color(0xFF304331),
+        surfacePreviewColor = Color(0xFFE5F0DF),
+        accentPreviewColor = Color(0xFF829A79),
     ),
     INDIGO_MOUNTAIN(
         id = "indigo_mountain",
@@ -64,9 +64,9 @@ enum class AppThemeId(
         subtitle = "远岫烟峦 · 沉静深邃",
         category = ThemeCategory.CLASSIC,
         isDark = false,
-        primaryPreviewColor = Color(0xFF2D4B66),
-        surfacePreviewColor = Color(0xFFF0F3F6),
-        accentPreviewColor = Color(0xFF9E443B),
+        primaryPreviewColor = Color(0xFF293F47),
+        surfacePreviewColor = Color(0xFFE5EEF0),
+        accentPreviewColor = Color(0xFF6F8F99),
     ),
     CINNABAR_RED(
         id = "cinnabar_red",
@@ -74,9 +74,9 @@ enum class AppThemeId(
         subtitle = "金石文会 · 古朴温润",
         category = ThemeCategory.CLASSIC,
         isDark = false,
-        primaryPreviewColor = Color(0xFF8E3529),
-        surfacePreviewColor = Color(0xFFF8F3F1),
-        accentPreviewColor = Color(0xFF355E52),
+        primaryPreviewColor = Color(0xFF4E2B2A),
+        surfacePreviewColor = Color(0xFFF7E5DD),
+        accentPreviewColor = Color(0xFFA85F53),
     ),
     AMBER_AUTUMN(
         id = "amber_autumn",
@@ -84,9 +84,9 @@ enum class AppThemeId(
         subtitle = "金菊暖阳 · 古册书香",
         category = ThemeCategory.CLASSIC,
         isDark = false,
-        primaryPreviewColor = Color(0xFF855828),
-        surfacePreviewColor = Color(0xFFF7F3EA),
-        accentPreviewColor = Color(0xFF48604F),
+        primaryPreviewColor = Color(0xFF49371D),
+        surfacePreviewColor = Color(0xFFF6E6C2),
+        accentPreviewColor = Color(0xFFA9823F),
     ),
     NIGHT_INK(
         id = "night_ink",
@@ -94,21 +94,21 @@ enum class AppThemeId(
         subtitle = "幽夜松烟 · 沉浸夜读",
         category = ThemeCategory.CLASSIC,
         isDark = true,
-        primaryPreviewColor = Color(0xFF7FA8C0),
-        surfacePreviewColor = Color(0xFF202321),
-        accentPreviewColor = Color(0xFFC25B4E),
+        primaryPreviewColor = Color(0xFFE9D8A8),
+        surfacePreviewColor = Color(0xFF34475B),
+        accentPreviewColor = Color(0xFF526A80),
     ),
 
     // ========== 四时主题 (4套) ==========
     SPRING_WILLOW(
         id = "spring_willow",
-        displayName = "柳烟春晓",
-        subtitle = "翠堤春晓 · 鹅黄嫩柳",
+        displayName = "桃夭春晓",
+        subtitle = "桃溪春晓 · 落英映水",
         category = ThemeCategory.SEASONAL,
         isDark = false,
-        primaryPreviewColor = Color(0xFF4A6D3A),
-        surfacePreviewColor = Color(0xFFF3F6ED),
-        accentPreviewColor = Color(0xFFC8853A),
+        primaryPreviewColor = Color(0xFF7B384A),
+        surfacePreviewColor = Color(0xFFF5E8EA),
+        accentPreviewColor = Color(0xFFC95B75),
     ),
     SUMMER_LOTUS(
         id = "summer_lotus",
@@ -116,9 +116,9 @@ enum class AppThemeId(
         subtitle = "映日荷花 · 微风出岫",
         category = ThemeCategory.SEASONAL,
         isDark = false,
-        primaryPreviewColor = Color(0xFF32616E),
-        surfacePreviewColor = Color(0xFFF2F6F7),
-        accentPreviewColor = Color(0xFFC2566A),
+        primaryPreviewColor = Color(0xFF235E4E),
+        surfacePreviewColor = Color(0xFFDFEFEA),
+        accentPreviewColor = Color(0xFFC24F68),
     ),
     AUTUMN_MAPLE(
         id = "autumn_maple",
@@ -138,15 +138,18 @@ enum class AppThemeId(
         isDark = false,
         primaryPreviewColor = Color(0xFF375069),
         surfacePreviewColor = Color(0xFFEFF3F6),
-        accentPreviewColor = Color(0xFF996548),
+        accentPreviewColor = Color(0xFF9A4232),
     );
 
     companion object {
         val Default = XUAN_PAPER
 
-        fun fromId(id: String?): AppThemeId {
-            if (id.isNullOrBlank()) return Default
-            return entries.firstOrNull { it.id.equals(id.trim(), ignoreCase = true) } ?: Default
+        fun fromId(rawId: String?): AppThemeId {
+            if (rawId.isNullOrBlank()) return Default
+            val trimmed = rawId.trim()
+            return entries.firstOrNull {
+                it.id.equals(trimmed, ignoreCase = true) || it.name.equals(trimmed, ignoreCase = true)
+            } ?: Default
         }
 
         fun getByCategory(category: ThemeCategory): List<AppThemeId> {

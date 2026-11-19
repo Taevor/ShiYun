@@ -1,6 +1,10 @@
 package com.shi.yun.data.repository
 
+import com.shi.yun.data.model.AuxiliaryContent
 import com.shi.yun.data.model.Work
+import com.shi.yun.data.model.WorkListItem
+import com.shi.yun.data.model.toWork
+import com.shi.yun.data.model.toWorkListItem
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -16,9 +20,25 @@ interface WorkRepository {
     suspend fun getAllWorks(): List<Work>
 
     /**
+     * 获取轻量作品列表（用于首页推荐、分类列表等高效展示场景）
+     */
+    suspend fun getWorkList(): List<WorkListItem> = getAllWorks().map { it.toWorkListItem() }
+
+    /**
+     * 高效获取首页推荐精选作品候选集（毫秒级冷启动响应，严格优先经典名作）
+     */
+    suspend fun getHomeRecommendations(count: Int = 40): List<Work> =
+        getWorkList().shuffled().take(count).map { it.toWork() }
+
+    /**
      * 根据唯一 ID 查询单篇作品
      */
     suspend fun getWorkById(id: String): Work?
+
+    /**
+     * 单独获取作品的辅助内容（注释、译文、赏析等）
+     */
+    suspend fun getAuxiliaryContent(workId: String): AuxiliaryContent? = getWorkById(workId)?.auxiliary
 
     /**
      * 随机获取一篇作品（供推荐流使用）

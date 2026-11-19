@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.content.Context
+import com.shi.yun.common.log.AppLogger
 import com.shi.yun.data.model.Work
 import com.shi.yun.data.model.formatAuthorDynasty
 import com.shi.yun.data.repository.WorkRepository
@@ -81,8 +82,8 @@ fun FavoriteScreen(
 
     val appTheme = com.shi.yun.ui.theme.LocalAppTheme.current
     val isDark = appTheme.themeId.isDark
-    val itemCardBg = appTheme.customTokens.cardBackground.copy(alpha = if (isDark) 0.60f else 0.42f)
-    val itemBorder = appTheme.customTokens.cardBorder.copy(alpha = if (isDark) 0.40f else 0.25f)
+    val itemCardBg = appTheme.customTokens.resolvedCardBackground(isDark)
+    val itemBorder = appTheme.customTokens.resolvedCardBorder(isDark)
 
     Column(
         modifier = modifier
@@ -94,9 +95,9 @@ fun FavoriteScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(com.shi.yun.ui.theme.ThemeVisualSpecs.CORNER_RADIUS_LIST_CARD))
                 .background(itemCardBg)
-                .border(0.5.dp, itemBorder, RoundedCornerShape(12.dp))
+                .border(com.shi.yun.ui.theme.ThemeVisualSpecs.BORDER_WIDTH_CARD, itemBorder, RoundedCornerShape(com.shi.yun.ui.theme.ThemeVisualSpecs.CORNER_RADIUS_LIST_CARD))
                 .padding(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
@@ -118,7 +119,10 @@ fun FavoriteScreen(
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
-                        .clickable { onOpenThemeSelection() }
+                        .clickable {
+                            AppLogger.interaction("FavoriteScreen", "ThemeButton", "Click", "SUCCESS", "打开主题选择浮层")
+                            onOpenThemeSelection()
+                        }
                         .padding(horizontal = 6.dp, vertical = 4.dp),
                 )
                 Text(
@@ -128,7 +132,10 @@ fun FavoriteScreen(
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
-                        .clickable { showLogDialog = true }
+                        .clickable {
+                            AppLogger.interaction("FavoriteScreen", "LogButton", "Click", "SUCCESS", "打开运行日志管理弹窗")
+                            showLogDialog = true
+                        }
                         .padding(horizontal = 6.dp, vertical = 4.dp),
                 )
             }
@@ -186,7 +193,10 @@ fun FavoriteScreen(
                     var itemBounds by remember { mutableStateOf<Rect?>(null) }
                     FavoriteWorkItem(
                         work = work,
-                        onClick = { onWorkClick(work, itemBounds) },
+                        onClick = {
+                            AppLogger.interaction("FavoriteScreen", "FavoriteWorkItem", "Click", "SUCCESS", "点击收藏作品: ${work.title} (${work.id})")
+                            onWorkClick(work, itemBounds)
+                        },
                         modifier = Modifier.onGloballyPositioned { coordinates ->
                             itemBounds = coordinates.boundsInRoot()
                         },
@@ -208,16 +218,16 @@ private fun FavoriteWorkItem(
 ) {
     val appTheme = com.shi.yun.ui.theme.LocalAppTheme.current
     val isDark = appTheme.themeId.isDark
-    val itemCardBg = appTheme.customTokens.cardBackground.copy(alpha = if (isDark) 0.60f else 0.42f)
-    val itemBorder = appTheme.customTokens.cardBorder.copy(alpha = if (isDark) 0.40f else 0.25f)
+    val itemCardBg = appTheme.customTokens.resolvedCardBackground(isDark)
+    val itemBorder = appTheme.customTokens.resolvedCardBorder(isDark)
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(com.shi.yun.ui.theme.ThemeVisualSpecs.CORNER_RADIUS_LIST_CARD))
             .background(itemCardBg)
-            .border(0.5.dp, itemBorder, RoundedCornerShape(12.dp))
+            .border(com.shi.yun.ui.theme.ThemeVisualSpecs.BORDER_WIDTH_CARD, itemBorder, RoundedCornerShape(com.shi.yun.ui.theme.ThemeVisualSpecs.CORNER_RADIUS_LIST_CARD))
             .clickable(onClick = onClick)
             .padding(horizontal = 18.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),

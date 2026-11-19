@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shi.yun.common.log.AppLogger
 
 /**
  * 诗云全局主题外观选择半屏浮层 (ThemeSelectionBottomSheet)
@@ -55,6 +56,7 @@ fun ThemeSelectionBottomSheet(
     currentThemeId: AppThemeId,
     onThemeSelected: (AppThemeId) -> Unit,
     onDismissRequest: () -> Unit,
+    onOpenTextureTest: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -104,16 +106,40 @@ fun ThemeSelectionBottomSheet(
                     )
                 }
 
-                Text(
-                    text = "完成",
-                    fontSize = 15.sp,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .clickable(onClick = onDismissRequest)
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (TextureTestBridge.isAvailable && onOpenTextureTest != null) {
+                        Text(
+                            text = "⚡ 纹理测试",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+                                .clickable(onClick = {
+                                    AppLogger.interaction("ThemeSelectionBottomSheet", "TextureTestButton", "Click", "SUCCESS", "打开纸张纹理测试界面")
+                                    onDismissRequest()
+                                    onOpenTextureTest()
+                                })
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+
+                    Text(
+                        text = "完成",
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable(onClick = {
+                                AppLogger.interaction("ThemeSelectionBottomSheet", "DoneButton", "Click", "SUCCESS", "关闭主题选择浮层")
+                                onDismissRequest()
+                            })
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -125,7 +151,11 @@ fun ThemeSelectionBottomSheet(
                 ThemeItemCard(
                     theme = theme,
                     isSelected = theme == currentThemeId,
-                    onSelect = { onThemeSelected(theme) },
+                    onSelect = {
+                        AppLogger.interaction("ThemeSelectionBottomSheet", "ThemeCard", "Click", "SUCCESS", "选中主题: ${theme.displayName} (${theme.name})")
+                        AppLogger.stateChange("AppTheme", currentThemeId.name, theme.name, "主题切换")
+                        onThemeSelected(theme)
+                    },
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -144,7 +174,11 @@ fun ThemeSelectionBottomSheet(
                 ThemeItemCard(
                     theme = theme,
                     isSelected = theme == currentThemeId,
-                    onSelect = { onThemeSelected(theme) },
+                    onSelect = {
+                        AppLogger.interaction("ThemeSelectionBottomSheet", "ThemeCard", "Click", "SUCCESS", "选中主题: ${theme.displayName} (${theme.name})")
+                        AppLogger.stateChange("AppTheme", currentThemeId.name, theme.name, "主题切换")
+                        onThemeSelected(theme)
+                    },
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }

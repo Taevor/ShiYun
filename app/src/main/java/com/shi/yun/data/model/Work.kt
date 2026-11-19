@@ -42,6 +42,7 @@ data class Work(
     val source: String = "",
     val sourceId: String = "",
     val licenseNote: String = "",
+    val sourceTraces: List<WorkSourceTrace> = emptyList(),
 )
 
 /**
