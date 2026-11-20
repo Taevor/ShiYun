@@ -15,6 +15,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.诗云"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -22,7 +23,31 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- 深度链接直达作品详情 (shiyun://work/{work_id}) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="shiyun"
+                    android:host="work" />
+            </intent-filter>
         </activity>
+
+        <!-- 诗云桌面横向名句小组件 -->
+        <receiver
+            android:name=".ui.widget.ShiYunQuoteWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_quote_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.shi.yun.action.REFRESH_WIDGET" />
+                <action android:name="com.shi.yun.action.THEME_CHANGED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/shiyun_quote_widget_info" />
+        </receiver>
     </application>
 
 </manifest>

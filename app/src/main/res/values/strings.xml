@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">诗云</string>
+    <string name="widget_quote_name">诗云名句</string>
+    <string name="widget_quote_description">在手机桌面上轻阅诗词名句，随时开启经典阅读。</string>
+    <string name="widget_refresh_label">换一换</string>
+    <string name="widget_default_quote">床前明月光，疑是地上霜。</string>
+    <string name="widget_default_author">—— 《静夜思》 〔唐〕李白</string>
 </resources>

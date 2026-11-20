@@ -81,6 +81,7 @@ import com.shi.yun.ui.theme.ThemeSelectionBottomSheet
 import com.shi.yun.ui.theme.TextureTestBridge
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
 /**
@@ -116,6 +117,10 @@ fun ShiApp(
     preferencesRepository: ReadingPreferencesRepository? = null,
     themeRepository: ThemePreferencesRepository? = null,
     customFontRepository: CustomFontRepository? = null,
+    targetWorkId: String? = null,
+    targetWorkEventKey: Long = 0L,
+    onTargetWorkIdConsumed: (() -> Unit)? = null,
+    navigationChannel: Channel<String>? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -251,6 +256,10 @@ fun ShiApp(
                 preferencesRepository = prefsRepo,
                 themeRepository = themeRepo,
                 customFontRepository = fontRepo,
+                targetWorkId = targetWorkId,
+                targetWorkEventKey = targetWorkEventKey,
+                onTargetWorkIdConsumed = onTargetWorkIdConsumed,
+                navigationChannel = navigationChannel,
                 onSelectWork = { work ->
                     AppLogger.i("Detail", "进入作品详情: ID=${work.id}, 标题=${work.title}, 朝代=${work.dynasty}, 作者=${work.author}")
                     selectedWork = work
@@ -275,6 +284,10 @@ private fun MainContent(
     preferencesRepository: ReadingPreferencesRepository,
     themeRepository: ThemePreferencesRepository,
     customFontRepository: CustomFontRepository,
+    targetWorkId: String? = null,
+    targetWorkEventKey: Long = 0L,
+    onTargetWorkIdConsumed: (() -> Unit)? = null,
+    navigationChannel: Channel<String>? = null,
     onSelectWork: (Work) -> Unit,
     onDismissDetail: () -> Unit,
     modifier: Modifier = Modifier,
@@ -456,14 +469,56 @@ private fun MainContent(
         loadWorkDetail(work)
     }
 
-    // 支持通过 Intent 携带 work_id 直接启动并进入指定作品详情（方便外部测试与深度链接）
-    val activity = LocalContext.current as? android.app.Activity
-    val initialWorkId = remember { activity?.intent?.getStringExtra("work_id") }
-    LaunchedEffect(initialWorkId, works) {
-        if (!initialWorkId.isNullOrBlank() && works.isNotEmpty() && selectedWork == null) {
-            val target = works.firstOrNull { it.id == initialWorkId } ?: repository.getWorkById(initialWorkId)
-            if (target != null) {
-                navigateToDetail(target, null, null)
+    // 外部深度链接与桌面小组件专属直达通道（跨越现有界面状态与动画锁，支持热唤醒下快速换篇与重复点击直达）
+    fun openWorkDetailDirectly(work: Work) {
+        AppLogger.i("Detail", "小组件直达通道进入详情: ID=${work.id}, 标题=${work.title}, 朝代=${work.dynasty}, 作者=${work.author}")
+        transitionSourceRect = null
+        anthologyContextWorks = null
+        anthologyCurrentIndex = -1
+        isTransitioning = false
+
+        onSelectWork(work)
+        loadWorkDetail(work)
+    }
+
+    // 监听 Channel 导航请求（小组件高频连续点击 / 外部深度链接，CONFLATED 确保最新请求必达且绝无状态竞争）
+    if (navigationChannel != null) {
+        LaunchedEffect(navigationChannel) {
+            for (workId in navigationChannel) {
+                if (workId.isNotBlank()) {
+                    AppLogger.i("ShiApp", "收到 Channel 小组件直达目标作品 ID: $workId")
+                    try {
+                        val target = works.firstOrNull { it.id == workId } ?: repository.getWorkById(workId)
+                        if (target != null) {
+                            openWorkDetailDirectly(target)
+                        } else {
+                            AppLogger.w("ShiApp", "Channel 未能查询到目标作品 ID: $workId")
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        AppLogger.e("ShiApp", "Channel 小组件直达跳转异常: ${e.message}", e)
+                    }
+                }
+            }
+        }
+    } else {
+        // 兼容非 Channel 传入时的旧版状态机制
+        LaunchedEffect(targetWorkId, targetWorkEventKey) {
+            if (!targetWorkId.isNullOrBlank()) {
+                AppLogger.i("ShiApp", "收到小组件/深度链接直达目标作品 ID: $targetWorkId (EventKey=$targetWorkEventKey)")
+                try {
+                    val target = works.firstOrNull { it.id == targetWorkId } ?: repository.getWorkById(targetWorkId)
+                    if (target != null) {
+                        openWorkDetailDirectly(target)
+                    } else {
+                        AppLogger.w("ShiApp", "未能查询到目标作品 ID: $targetWorkId")
+                    }
+                } catch (e: Exception) {
+                    AppLogger.e("ShiApp", "小组件直达跳转异常: ${e.message}", e)
+                } finally {
+                    onTargetWorkIdConsumed?.invoke()
+                }
             }
         }
     }

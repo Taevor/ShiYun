@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -71,6 +72,7 @@ import com.shi.yun.data.model.toWorkListItem
 import com.shi.yun.ui.detail.PoemTypography
 import com.shi.yun.ui.theme.LocalAppTheme
 import com.shi.yun.ui.theme.ThemeBackgroundStyle
+import com.shi.yun.ui.vertical.VerticalPoemCardContent
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -516,7 +518,7 @@ private fun CardSwipeBox(
 }
 
 /**
- * 半透明温润宣纸卡片展示单元
+ * 半透明温润宣纸卡片展示单元（采用纯正中文古典竖排排版）
  */
 @Composable
 private fun ExcerptCard(
@@ -543,60 +545,17 @@ private fun ExcerptCard(
         tonalElevation = com.shi.yun.ui.theme.ThemeVisualSpecs.ELEVATION_ZERO,
         shadowElevation = com.shi.yun.ui.theme.ThemeVisualSpecs.ELEVATION_ZERO,
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 28.dp, vertical = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .padding(horizontal = 12.dp, vertical = 14.dp),
         ) {
-            // 核心视觉焦点：推荐诗词短句（整句排版，绝不拆断单句）
-            val excerptLines = remember(work.excerpt) {
-                PoemTypography.splitSentenceIntoLines(work.excerpt)
-            }
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                excerptLines.forEach { line ->
-                    Text(
-                        text = line,
-                        fontSize = if (excerptLines.size > 2) 21.sp else 23.sp,
-                        lineHeight = if (excerptLines.size > 2) 34.sp else 38.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = appTheme.customTokens.titleText,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // 辅助信息：朝代、作者与作品标题（靠右下角对齐，文字右对齐，清晰层次）
-            val authorDynasty = work.formatAuthorDynasty()
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.End,
-            ) {
-                if (authorDynasty.isNotEmpty()) {
-                    Text(
-                        text = "—— $authorDynasty",
-                        fontSize = 13.5.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = appTheme.customTokens.secondaryText,
-                        textAlign = TextAlign.End,
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                }
-                Text(
-                    text = "《${work.title}》",
-                    fontSize = 13.5.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = appTheme.customTokens.titleText.copy(alpha = 0.85f),
-                    textAlign = TextAlign.End,
-                    maxLines = 2,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                )
-            }
+            VerticalPoemCardContent(
+                work = work,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 300.dp, max = 460.dp),
+            )
         }
     }
 }

@@ -58,7 +58,8 @@ interface WorkDao {
             COALESCE(a.standard_name, '佚名') AS author_name,
             COALESCE(d.standard_name, da.standard_name, '') AS dynasty_name,
             COALESCE(g.standard_name, wvc_g.classification_id, 'poem') AS genre_code,
-            COALESCE(wv.excerpt, substr(cc.content_payload, 1, instr(cc.content_payload || char(10), char(10)) - 1), '') AS excerpt
+            COALESCE(wv.excerpt, substr(cc.content_payload, 1, instr(cc.content_payload || char(10), char(10)) - 1), '') AS excerpt,
+            cc.content_payload AS full_content
         FROM works w
         LEFT JOIN release_work_entries rwe ON w.work_id = rwe.work_id
         LEFT JOIN app_release_pointer arp ON rwe.release_id = arp.current_release_id AND arp.pointer_id = 1
@@ -91,7 +92,8 @@ interface WorkDao {
             COALESCE(a.standard_name, '佚名') AS author_name,
             COALESCE(d.standard_name, da.standard_name, '') AS dynasty_name,
             COALESCE(g.standard_name, wvc_g.classification_id, 'poem') AS genre_code,
-            COALESCE(wv.excerpt, substr(cc.content_payload, 1, instr(cc.content_payload || char(10), char(10)) - 1), '') AS excerpt
+            COALESCE(wv.excerpt, substr(cc.content_payload, 1, instr(cc.content_payload || char(10), char(10)) - 1), '') AS excerpt,
+            cc.content_payload AS full_content
         FROM works w
         LEFT JOIN release_work_entries rwe ON w.work_id = rwe.work_id AND rwe.release_id = 'release_v1_1'
         LEFT JOIN work_versions wv ON (
@@ -267,5 +269,6 @@ data class WorkListItemProjection(
     @androidx.room.ColumnInfo(name = "author_name") val authorName: String?,
     @androidx.room.ColumnInfo(name = "dynasty_name") val dynastyName: String?,
     @androidx.room.ColumnInfo(name = "genre_code") val genreCode: String?,
-    @androidx.room.ColumnInfo(name = "excerpt") val excerpt: String?
+    @androidx.room.ColumnInfo(name = "excerpt") val excerpt: String?,
+    @androidx.room.ColumnInfo(name = "full_content") val fullContent: String? = null,
 )

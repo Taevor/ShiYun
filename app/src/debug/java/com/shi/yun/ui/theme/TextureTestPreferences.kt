@@ -8,9 +8,9 @@ import android.content.SharedPreferences
  */
 data class TextureTestConfig(
     val theme: TestGradientTheme = TestGradientTheme.XUAN_PAPER,
-    val resolution: TextureResolution = TextureResolution.SIZE_512,
+    val resolution: TextureResolution = TextureResolution.ORIGINAL,
     val blendMode: TextureBlendModeType = TextureBlendModeType.LINEAR_LIGHT,
-    val alpha: Float = 0.20f,
+    val alpha: Float = 0.10f,
     val isTextureEnabled: Boolean = true,
     val showPoemCard: Boolean = true,
 )
