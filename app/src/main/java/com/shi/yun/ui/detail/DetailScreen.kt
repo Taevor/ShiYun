@@ -193,6 +193,13 @@ fun DetailScreen(
     var showAuxiliaryPanel by rememberSaveable { mutableStateOf(false) }
     var selectedAuxiliaryTab by rememberSaveable { mutableStateOf(AuxiliaryTab.ANNOTATION) }
 
+    // 当作品 ID 变更时（如通过小组件热唤醒换篇或选本切篇），重置正文滚动条与面板状态
+    LaunchedEffect(work.id) {
+        scrollState.scrollTo(0)
+        showAuxiliaryPanel = false
+        showSettingsSheet = false
+    }
+
     // 当辅助内容面板展开时，系统返回键优先收起辅助面板
     BackHandler(enabled = showAuxiliaryPanel) {
         AppLogger.interaction("DetailScreen", "SystemBack", "CloseAuxiliaryPanel", "SUCCESS", "系统返回键收起辅助面板")

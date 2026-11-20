@@ -3159,3 +3159,127 @@ E:\Android\ShiYun\Haitang_Import_Preparation\scripts\
 ### 34.7 编译与测试验证
 - **单元测试**：`:app:testDebugUnitTest` 执行结果 **215 passed, 0 skipped, 0 failed（100% 通过）**；
 - **Release 构建**：`:app:assembleRelease` 编译构建成功。
+---
+
+## 阶段三十五：0.2.0 阶段一——六套经典主题导航栏图标自动继承主色修复
+
+### 35.1 任务目标与问题背景
+在 0.1.5 稳定版本建立后，开启 0.2.0 开发分支 eat/v0.2.0-theme-auto-primary。
+针对朱砂雅集（cinnabar_red）与琥珀秋笺（mber_autumn）在浅色模式下底部导航栏图标使用旧配置白色（#FFFFFF），导致与浅米色底栏背景对比度不足的问题进行定点修复。采用架构级自动继承当前主题主色（ColorScheme.primary）的方案，彻底告别按主题 ID 硬编码图标颜色的繁琐方式。
+
+### 35.2 修改范围与四季主题隔离保护
+- **六套经典主题**：
+  * 宣纸古籍：继承 primary = Color(0xFF493A2B)（深古籍褐）；
+  * 竹青雅韵：继承 primary = Color(0xFF304331)（深竹青墨）；
+  * 黛青山水：继承 primary = Color(0xFF2A3A40)（深青灰墨）；
+  * 朱砂雅集：继承 primary = Color(0xFF4E2B2A)（深朱褐，彻底告别白色图标）；
+  * 琥珀秋笺：继承 primary = Color(0xFF49371D)（深秋褐，彻底告别白色图标）；
+  * 墨夜清辉：继承 primary = Color(0xFFE9D8A8)（亮米黄，暗色护眼模式对比清晰）。
+- **四套四季主题严格保护**：
+  * 春柳拂波、夏荷清池、秋枫尽染、冬雪烹梅完全保持现状，图标颜色继续读取 customTokens.bottomNavIconColor，底图、遮罩及视觉参数 100% 保持未改动。
+
+### 35.3 核心实现细节
+1. **[AppThemeDefinition.kt](file:///E:/Android/ShiYun/app/src/main/java/com/shi/yun/ui/theme/AppThemeDefinition.kt)**：
+   在 AppThemeDefinition 中新增计算属性 
+esolvedNavIconColor：
+   `kotlin
+   val resolvedNavIconColor: Color
+       get() = if (themeId.category == ThemeCategory.CLASSIC) {
+           colorScheme.primary
+       } else {
+           customTokens.bottomNavIconColor
+       }
+   `
+2. **[AppThemePalette.kt](file:///E:/Android/ShiYun/app/src/main/java/com/shi/yun/ui/theme/AppThemePalette.kt)**：
+   - 6 套经典主题 CustomTokens 中 ottomNavIconColor 对齐到各自 ColorScheme.primary；
+   - 4 套四季主题完全保持不变。
+3. **[ShiApp.kt](file:///E:/Android/ShiYun/app/src/main/java/com/shi/yun/ui/ShiApp.kt)**：
+   - 底部导航栏中 ctiveIconColor 改为读取 ppTheme.resolvedNavIconColor；
+   - 选中态：lpha = 1.0f；
+   - 未选中态：lpha = 0.50f（由 ctiveIconColor.copy(alpha = 0.50f) 提供）；
+   - 底栏背景保持 
+esolvedNavBackground(isDark)；
+   - 尺寸、间距、触摸热区与切换动画完全保持稳定。
+4. **[ThemeTest.kt](file:///E:/Android/ShiYun/app/src/test/java/com/shi/yun/ui/theme/ThemeTest.kt)**：
+   - 导航栏对比度测试基准升级：将对比度背景计算调整为实际渲染的合成背景（ThemeVisualSpecs.resolvedNavBackground 叠加 ThemeVisualSpecs.resolvedCardBackground），断言图标为 
+esolvedNavIconColor；
+   - 新增 	estClassicThemesNavIconAutoInheritPrimary() 单元测试，自动化断言 6 套经典主题选中/未选中态透明度、明暗模式色值以及四季主题未受波及。
+
+### 35.4 编译与测试验证
+- **自动化单元测试**：:app:testDebugUnitTest 全部 **216 项通过（100% 通过，0 失败，0 跳过）**；
+- **Debug APK 编译**：:app:assembleDebug 编译成功；
+- **Release APK 编译**：:app:assembleRelease 编译成功。
+
+---
+
+## 阶段三十六：建立 A/B 数据库分离机制与发布数据清洗规范（v0.2.0 起永久固化）
+
+### 36.1 背景与长期架构决策
+在 v0.2.0 正式发布前审计中，发现 Release APK 内打包的数据库包含万余条外部来源 URL、整理者署名及批次追溯数据。为彻底解决用户端发布物的合规纯净性，同时永续保留古典文献工程母本的完整学术追溯能力，正式建立 A/B 数据库物理分离与单向衍生机制。
+
+### 36.2 A/B 数据库职责与红线规范
+> **【核心红线】A库是唯一正式数据母本。B库只是由A库生成的App发布副本。任何新增、修正或补充诗词数据，都必须先修改A库，再重新生成B库。禁止直接修改B库作为正式数据更新。**
+
+1. **A库（完整数据母本）**：
+   - **绝对路径**：[`ShiYun_ProjectData/database_backup/shiyun_master.db`](file:///E:/Android/ShiYun/ShiYun_ProjectData/database_backup/shiyun_master.db)
+   - **职责**：保存 12,188 首作品、2,436 位作者、387 部文集、35,028 条辅助组件及其对应的全部外部来源追溯（URL、整理组署名、批次历史）。
+   - **规则**：永久只读隔离；禁止为发布 App 删除来源信息；作为后续所有版本数据新增、校正的唯一源头。
+2. **B库（App 纯净发布库）**：
+   - **绝对路径**：[`app/src/main/assets/database/shiyun.db`](file:///E:/Android/ShiYun/app/src/main/assets/database/shiyun.db)
+   - **职责**：仅供 Android App 预置打包；彻底清空 `external_source_links`、`content_attributions`、`work_source_links`，置空 `biography_source` 与 `edition_name`，标准化发布指针；
+   - **规则**：必须由 A 库单向清洗生成，严禁反向覆盖 A 库，严禁在 B 库直接编辑数据。
+
+### 36.3 清洗规则与 Room V1.0 架构兼容性保障
+1. **38 张物理表结构零破坏**：由于 Room 框架在启动时依赖 `room_master_table`（`identity_hash = 1b9599dae1e2ce0e84221f69acda80aa`）校验全部 38 张表结构，因此清洗策略严格采用“清空敏感行数据 / 字段脱敏置空”，绝对禁止 `DROP TABLE`；
+2. **外键约束闭环执行**：在 `PRAGMA foreign_keys = ON;` 下，严格按照依赖拓扑顺序（`authors` 置空外键 -> 清空 `content_attributions` -> 清空 `work_source_links` -> 清空 `external_source_links` -> 脱敏发布记录与指针 -> 清理元数据）在单一事务中原子执行；
+3. **双重校验与 APK 提取穿透验收**：每次发布均需校验 `PRAGMA integrity_check`、`PRAGMA foreign_key_check`，并从最终生成的 Release APK 中提取数据库验证外部来源残留为 0。
+
+
+---
+
+## 诗云 v0.2.0 正式版本更新说明（GitHub Release）
+
+### 🌸 诗云 v0.2.0 版本更新说明
+
+**诗云 v0.2.0** 现已正式发布！本次更新带来了典藏文库的重磅扩充，并对主题视觉表现与底层资产进行了细致优化，为你带来更丰沛、沉浸的古典文学阅读体验。
+
+---
+
+### 📚 典藏文库重磅扩充
+
+- **收录规模大幅提升**：
+  - 传世诗词文赋扩充至 **12,000 余首**，完整涵盖古体诗、近体诗（绝句、律诗）、词调词牌、散曲杂剧、辞赋与经典散文等多种体裁；
+  - 历代文人收录扩充至 **2,400 余位**，并补充了详实的生平小传与背景介绍；
+  - 经典选本与文集增补至 **380 余部**（完整收录《唐诗三百首》《宋词三百首》《古文观止》《诗经》《楚辞》等），支持按原书编目序列连续品读；
+- **研读辅助内容扩充**：
+  - 同步扩充了重点字词注释、白话全文翻译与名家赏析，阅读详情页支持一键展开研读面板。
+
+---
+
+### 🎨 界面与主题视觉优化
+
+- **经典主题底栏图标色彩适配**：
+  - 优化并修复了六套经典主题（宣纸古籍、竹青雅韵、黛青山水、朱砂雅集、琥珀秋笺、墨夜清辉）在底部导航栏的色彩表现；
+  - 底部导航图标改为自动适配继承当前主题色，彻底解决了朱砂雅集、琥珀秋笺等浅色主题下底栏图标对比度不足的问题，页面视觉更加自然协调。
+- **四季主题保持原有诗意**：
+  - 柳烟春晓、荷风清韵、枫笺染霜、寒江雪隐四套四季水墨插画主题保持原有的淡雅基调与舒适留白不变。
+
+---
+
+### 📦 资产精简与文库纯净度优化
+
+- **内置资产瘦身与体积优化**：
+  - 全面由高效的正式预置数据库提供服务，彻底清理了开发阶段过渡使用的历史冗余数据资源，显著缩减了安装包体积。
+- **文库数据规范化脱敏**：
+  - 彻底清理了内置文库中的外部爬虫标记与多余追溯信息，文库数据更干净规范，保障单机离线阅读环境。
+
+---
+
+### 📲 下载与安装
+
+- **支持系统**：Android 10.0（API 级别 29）及以上。
+- **安装方法**：在下方 **Assets** 列表中下载 `app-release.apk`，在手机文件管理或浏览器中点击直接安装即可。
+
+---
+
+*感谢所有喜爱诗云的朋友，愿诗意常伴左右！*

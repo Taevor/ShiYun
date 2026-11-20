@@ -50,6 +50,11 @@ class LocalThemePreferencesRepository(
         _currentThemeIdFlow.value = themeId
         withContext(ioDispatcher) {
             saveThemeIdInternal(themeId)
+            try {
+                com.shi.yun.ui.widget.ShiYunQuoteWidgetProvider.notifyThemeChanged(context)
+            } catch (e: Exception) {
+                AppLogger.w("ThemePreferences", "通知桌面小组件更新主题失败: ${e.message}")
+            }
         }
     }
 
@@ -68,7 +73,7 @@ class LocalThemePreferencesRepository(
     private fun saveThemeIdInternal(themeId: AppThemeId) {
         synchronized(lock) {
             try {
-                prefs.edit().putString(KEY_THEME_ID, themeId.id).apply()
+                prefs.edit().putString(KEY_THEME_ID, themeId.id).commit()
                 AppLogger.d("ThemePreferences", "全局主题已成功持久化落盘: ${themeId.id}")
             } catch (e: Exception) {
                 AppLogger.e("ThemePreferences", "保存全局主题失败: ${e.message}", e)

@@ -121,6 +121,10 @@ object TextureBitmapCache {
     private val cache = ConcurrentHashMap<TextureResolution, Bitmap>()
 
     suspend fun getBitmap(context: Context, res: TextureResolution): Bitmap = withContext(Dispatchers.IO) {
+        if (res == TextureResolution.ORIGINAL) {
+            // 直接复用全局单例缓存加载最新修复版原图 bg_paper_texture.webp
+            return@withContext PaperTextureCache.getTextureBitmap(context, com.shi.yun.R.drawable.bg_paper_texture)
+        }
         cache.getOrPut(res) {
             val startMs = System.currentTimeMillis()
             var inputStream: InputStream? = null
@@ -206,6 +210,38 @@ fun TextureTestScreen(
     var lastDrawDurationMs by remember { mutableLongStateOf(0L) }
     var frameCount by remember { mutableIntStateOf(0) }
 
+    // 注册广播监听，方便自动化测试脚本精准调整主题与透明度
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        val receiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: android.content.Intent?) {
+                intent?.getStringExtra("theme")?.let { themeStr ->
+                    TestGradientTheme.entries.find { it.name.equals(themeStr, ignoreCase = true) || it.themeName == themeStr }?.let {
+                        selectedTheme = it
+                    }
+                }
+                if (intent?.hasExtra("alpha") == true) {
+                    val a = intent.getFloatExtra("alpha", textureAlpha)
+                    textureAlpha = a
+                    isTextureEnabled = a > 0f
+                }
+                if (intent?.hasExtra("isTextureEnabled") == true) {
+                    isTextureEnabled = intent.getBooleanExtra("isTextureEnabled", true)
+                }
+            }
+        }
+        val filter = android.content.IntentFilter("com.shi.yun.action.SET_TEXTURE_TEST_CONFIG")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
+        } else {
+            context.registerReceiver(receiver, filter)
+        }
+        onDispose {
+            try {
+                context.unregisterReceiver(receiver)
+            } catch (_: Exception) {}
+        }
+    }
+
     // 异步装载当前所选分辨率的纹理位图
     LaunchedEffect(selectedResolution) {
         isLoadingBitmap = true
@@ -239,8 +275,8 @@ fun TextureTestScreen(
             val canvasWidth = size.width
             val canvasHeight = size.height
 
-            if (!isTextureEnabled || currentBitmap == null) {
-                // 基准对照组：纯渐变背景绘制
+            if (!isTextureEnabled || textureAlpha <= 0f || currentBitmap == null) {
+                // 基准对照组：纯渐变背景绘制 (0% 透明度真正不绘制纹理)
                 drawRect(
                     brush = Brush.verticalGradient(
                         colors = listOf(selectedTheme.topColor, selectedTheme.bottomColor),
@@ -408,7 +444,7 @@ fun TextureTestScreen(
                     }
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "${selectedTheme.themeName} · ${if (isTextureEnabled) "纹理开" else "纯色"} · ${(textureAlpha * 100).roundToInt()}%",
+                        text = "${selectedTheme.themeName} · ${if (isTextureEnabled && textureAlpha > 0f) "纹理开" else "纯色"} · ${(textureAlpha * 100).roundToInt()}%",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
                         color = if (selectedTheme.isDark) Color.White else Color(0xFF1A1815),
@@ -536,15 +572,17 @@ fun TextureTestScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            // 透明度循环切换 Chip (10% -> 15% -> 20% -> 25% -> 30%)
+                            // 透明度循环切换 Chip (0% -> 5% -> 10% -> 15% -> 20%)
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(6.dp))
                                     .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f))
                                     .clickable {
-                                        val steps = listOf(0.10f, 0.15f, 0.20f, 0.25f, 0.30f)
+                                        val steps = listOf(0.0f, 0.05f, 0.10f, 0.15f, 0.20f)
                                         val curIdx = steps.indexOfFirst { (it * 100).roundToInt() == (textureAlpha * 100).roundToInt() }
-                                        textureAlpha = if (curIdx >= 0 && curIdx < steps.size - 1) steps[curIdx + 1] else steps[0]
+                                        val nextAlpha = if (curIdx >= 0 && curIdx < steps.size - 1) steps[curIdx + 1] else steps[0]
+                                        textureAlpha = nextAlpha
+                                        isTextureEnabled = nextAlpha > 0f
                                     }
                                     .padding(horizontal = 8.dp, vertical = 4.dp),
                             ) {
@@ -692,13 +730,16 @@ fun TextureTestScreen(
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    listOf(0.10f, 0.15f, 0.20f, 0.25f, 0.30f).forEach { opVal ->
+                                    listOf(0.0f, 0.05f, 0.10f, 0.15f, 0.20f).forEach { opVal ->
                                         val isCur = (textureAlpha * 100).roundToInt() == (opVal * 100).roundToInt()
                                         Box(
                                             modifier = Modifier
                                                 .clip(RoundedCornerShape(4.dp))
                                                 .background(if (isCur) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
-                                                .clickable { textureAlpha = opVal }
+                                                .clickable {
+                                                    textureAlpha = opVal
+                                                    isTextureEnabled = opVal > 0f
+                                                }
                                                 .padding(horizontal = 6.dp, vertical = 2.dp),
                                         ) {
                                             Text(

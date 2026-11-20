@@ -21,6 +21,7 @@ import com.shi.yun.data.model.Work
 import com.shi.yun.data.model.WorkListItem
 import com.shi.yun.data.model.toWork
 import com.shi.yun.data.repository.WorkRepository
+import com.shi.yun.data.util.PoemCoupletExtractor
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -133,8 +134,10 @@ class RoomWorkRepository(
             }
 
             val targetCount = count.coerceAtLeast(1)
+            // 采样倍数：为了严格过滤非诗体裁及不满足对仗双句条件的作品，采样 3 倍候选集
+            val sampleSize = (targetCount * 3).coerceAtLeast(60)
             val selectedIds = if (!candidateIds.isNullOrEmpty()) {
-                candidateIds.shuffled().take(targetCount)
+                candidateIds.shuffled().take(sampleSize)
             } else {
                 emptyList()
             }
@@ -142,11 +145,15 @@ class RoomWorkRepository(
             if (selectedIds.isEmpty()) {
                 val duration = System.currentTimeMillis() - startTime
                 AppLogger.w("RoomWorkRepository", "推荐候选集为空，回退到普通列表装载 (耗时=${duration}ms)")
-                return@withContext getWorkList().shuffled().take(targetCount).map { it.toWork() }
+                return@withContext getWorkList()
+                    .map { it.toWork() }
+                    .filter { it.genre == Genre.POEM && PoemCoupletExtractor.extractCouplet(it) != null }
+                    .shuffled()
+                    .take(targetCount)
             }
 
             val projections = workDao.getWorkListProjectionsByIds(selectedIds)
-            val works = projections.map { proj ->
+            val works: List<Work> = projections.mapNotNull { proj ->
                 val resolvedGenre = Genre.fromCodeOrNull(proj.genreCode)
                     ?: Genre.entries.firstOrNull { it.displayName == proj.genreCode }
                     ?: when {
@@ -155,22 +162,33 @@ class RoomWorkRepository(
                         proj.genreCode?.contains("文", ignoreCase = true) == true -> Genre.WEN
                         else -> Genre.POEM
                     }
-                WorkListItem(
+                val candidateWork = Work(
                     id = proj.workId,
                     title = proj.standardTitle,
                     author = proj.authorName?.takeIf { it.isNotBlank() } ?: "佚名",
                     dynasty = proj.dynastyName ?: "",
                     genre = resolvedGenre,
+                    content = proj.fullContent ?: "",
                     excerpt = proj.excerpt ?: ""
-                ).toWork()
-            }
+                )
+                if (candidateWork.genre == Genre.POEM && PoemCoupletExtractor.extractCouplet(candidateWork) != null) {
+                    candidateWork
+                } else {
+                    null
+                }
+            }.take(targetCount)
+
             val duration = System.currentTimeMillis() - startTime
             AppLogger.i("RoomWorkRepository", "首页极速推荐集装载成功: count=${works.size}, 耗时=${duration}ms")
             works
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             AppLogger.e("RoomWorkRepository", "首页推荐集装载失败: 耗时=${duration}ms, 原因=${e.message}", e)
-            getWorkList().shuffled().take(count).map { it.toWork() }
+            getWorkList()
+                .map { it.toWork() }
+                .filter { it.genre == Genre.POEM && PoemCoupletExtractor.extractCouplet(it) != null }
+                .shuffled()
+                .take(count)
         }
     }
 

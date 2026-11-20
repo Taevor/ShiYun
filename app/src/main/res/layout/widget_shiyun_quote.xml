@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_widget_card"
+    android:clipToOutline="true"
+    tools:targetApi="s">
+
+    <!-- 1. 原生 Shape Drawable 底色卡片（16dp 绝对不变形圆角） -->
+    <ImageView
+        android:id="@+id/widget_card_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:src="@drawable/bg_widget_card" />
+
+    <!-- 2. 主题纹理独立叠加层（居中等比裁剪，透明度严格锁定 0.1f，与圆角完全解耦） -->
+    <ImageView
+        android:id="@+id/widget_texture_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop" />
+
+    <!-- 3. 原生 Shape Drawable 统一微边框（16dp 绝对不变形圆角） -->
+    <ImageView
+        android:id="@+id/widget_card_border"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:src="@drawable/bg_widget_card_border" />
+
+    <!-- 4. 内容布局层 -->
+    <LinearLayout
+        android:id="@+id/widget_content_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingLeft="20dp"
+        android:paddingTop="10dp"
+        android:paddingRight="20dp"
+        android:paddingBottom="10dp">
+
+        <!-- 顶部功能栏（标准尺寸展示，高度不足时自适应隐藏） -->
+        <LinearLayout
+            android:id="@+id/widget_header_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/widget_app_brand"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:alpha="0.85"
+                android:fontFamily="serif"
+                android:text="@string/app_name"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/widget_btn_refresh"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:alpha="0.85"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:contentDescription="@string/widget_refresh_label"
+                android:focusable="true"
+                android:padding="6dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_widget_refresh" />
+        </LinearLayout>
+
+        <!-- 中部名句主展示区（宽度自适应自然折行、居中排版、古典衬线体） -->
+        <FrameLayout
+            android:id="@+id/widget_quote_container"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <TextView
+                android:id="@+id/widget_quote_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:ellipsize="end"
+                android:fontFamily="serif"
+                android:gravity="center"
+                android:lineSpacingExtra="5dp"
+                android:maxLines="3"
+                android:text="@string/widget_default_quote"
+                android:textAlignment="center"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+        </FrameLayout>
+
+        <!-- 底部作者与出处信息 -->
+        <LinearLayout
+            android:id="@+id/widget_footer_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="end|center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/widget_author_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:fontFamily="serif"
+                android:maxLines="1"
+                android:text="@string/widget_default_author"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+</FrameLayout>
